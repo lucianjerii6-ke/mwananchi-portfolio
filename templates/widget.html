@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mwananchi Credit — Portfolio Dashboard</title>
+
+<!-- Monday.com Apps SDK -->
+<script src="https://cdn.monday.com/apps-sdk/v1/monday.min.js"></script>
+
+<!-- Fonts & Charts -->
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&family=Merriweather+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#020F71; --blue:#0A1A8A; --mid:#1535C0; --accent:#F7941D;
+  --red:#c53030; --green:#276749; --orange:#e07000; --purple:#553c9a;
+  --bg:#f5f4f0; --card:#fff; --border:#e2ddd6; --text:#1a1612; --muted:#6b6560; --light:#f9f8f5;
+}
+body.monday-dark{
+  --bg:#1f2d3d; --card:#293d52; --border:#3a506b; --text:#c3cdd9; --muted:#8593a4; --light:#253445;
+}
+body{font-family:'Merriweather Sans',sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;overflow-x:hidden}
+header{background:var(--navy);color:#fff;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:60px;border-bottom:3px solid var(--accent);}
+.header-logo{display:flex;align-items:center;gap:12px}
+.logo-text .brand-main{font-family:'Merriweather',serif;font-size:1.1rem;font-weight:900;color:#fff;display:block}
+.logo-text .brand-credit{font-family:'Merriweather Sans',sans-serif;font-size:.68rem;font-weight:700;color:var(--accent);letter-spacing:3px;text-transform:uppercase;display:block}
+.logo-text .brand-tag{font-family:'Merriweather Sans',sans-serif;font-size:.55rem;color:rgba(255,255,255,.45);letter-spacing:2px;text-transform:uppercase;display:block;margin-top:1px}
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+#liveClock{color:var(--accent);font-weight:700;font-size:.75rem}
+.header-controls{display:flex;align-items:center;gap:8px}
+.btn-refresh{padding:4px 12px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:4px;font-family:'Merriweather Sans',sans-serif;font-size:.64rem;font-weight:700;cursor:pointer;letter-spacing:.4px;transition:all .15s}
+.btn-refresh:hover{background:var(--accent);color:#fff}
+.btn-refresh.spinning svg{animation:spin .7s linear infinite}
+.countdown{font-size:.62rem;color:rgba(255,255,255,.4)}
+.header-meta{font-size:.62rem;color:rgba(255,255,255,.4)}
+.tab-nav{background:#010B5A;display:flex;padding:0 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.tab-btn{padding:11px 22px;cursor:pointer;color:rgba(255,255,255,.45);font-family:'Merriweather Sans',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.6px;text-transform:uppercase;border-bottom:3px solid transparent;transition:all .2s;user-select:none}
+.tab-btn:hover{color:rgba(255,255,255,.8)}
+.tab-btn.active{color:#fff;border-bottom-color:var(--accent)}
+.page{display:none;padding:18px 20px}
+.page.active{display:block}
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.kpi-row.cols-4{grid-template-columns:repeat(4,1fr)}
+.kpi-row.cols-5{grid-template-columns:repeat(5,1fr)}
+.kpi{background:var(--card);border-radius:6px;padding:14px 16px;border-left:4px solid;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.kpi.c-blue{border-color:var(--mid)}.kpi.c-gold{border-color:var(--accent)}.kpi.c-green{border-color:var(--green)}.kpi.c-red{border-color:var(--red)}.kpi.c-orange{border-color:var(--orange)}.kpi.c-purple{border-color:var(--purple)}.kpi.c-navy{border-color:var(--navy)}
+.kpi-label{font-size:.61rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px}
+.kpi-value{font-family:'Merriweather',serif;font-size:1.45rem;font-weight:900;color:var(--navy);line-height:1.1}
+body.monday-dark .kpi-value{color:var(--text)}
+.kpi-sub{font-size:.67rem;color:var(--muted);font-weight:300;margin-top:3px}
+.kpi-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:7px}
+.kpi-bar-fill{height:100%;border-radius:2px}
+.sec-head{margin:22px 0 12px}
+.sec-head h2{font-family:'Merriweather',serif;font-size:.95rem;font-weight:700;color:var(--navy)}
+body.monday-dark .sec-head h2{color:var(--text)}
+.sec-head .sub{font-size:.67rem;color:var(--muted);margin-top:2px}
+.gold-bar{width:32px;height:3px;background:var(--accent);border-radius:2px;margin:5px 0 14px}
+.filter-bar{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 14px;display:flex;align-items:flex-end;gap:12px;margin-bottom:14px}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.fg select,.fg input[type=date]{padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-family:'Merriweather Sans',sans-serif;font-size:.77rem;color:var(--text);background:var(--light);min-width:145px}
+.fg select:focus,.fg input:focus{outline:none;border-color:var(--mid)}
+.btn-exec{padding:7px 16px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-family:'Merriweather Sans',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.4px;cursor:pointer;align-self:flex-end;transition:background .15s}
+.btn-exec:hover{background:#e07b00}
+.refreshed{font-size:.63rem;color:var(--green);font-weight:600;align-self:flex-end;padding-bottom:8px}
+.card{background:var(--card);border-radius:6px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--border);margin-bottom:14px}
+.card-title{font-family:'Merriweather',serif;font-size:.78rem;font-weight:700;color:var(--navy);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+body.monday-dark .card-title{color:var(--text)}
+.count-pill{font-family:'Merriweather Sans',sans-serif;font-size:.6rem;font-weight:700;background:var(--navy);color:#fff;padding:2px 7px;border-radius:10px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.74rem}
+thead tr{background:var(--navy);color:#fff}
+thead th{padding:7px 10px;text-align:left;font-family:'Merriweather Sans',sans-serif;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+thead th.r{text-align:right}
+tbody tr:nth-child(even){background:var(--light)}
+tbody tr:hover{background:#eef3f9}
+tbody td{padding:6px 10px;border-bottom:1px solid var(--border);font-family:'Merriweather Sans',sans-serif}
+tbody td.r{text-align:right;font-variant-numeric:tabular-nums}
+tfoot td{padding:7px 10px;background:#e4e0d8;font-weight:700;font-family:'Merriweather Sans',sans-serif;border-top:2px solid var(--navy)}
+tfoot td.r{text-align:right}
+.par-pill{display:inline-block;padding:2px 7px;border-radius:10px;font-size:.61rem;font-weight:700}
+.par-ok{background:#c6f6d5;color:#1a4731}.par-watch{background:#fefcbf;color:#744210}.par-high{background:#fed7aa;color:#9a3412}.par-red{background:#fed7d7;color:#742a2a}.par-danger{background:#c53030;color:#fff}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:.61rem;font-weight:700}
+.b-green{background:#c6f6d5;color:#1a4731}.b-amber{background:#fefcbf;color:#744210}.b-orange{background:#fed7aa;color:#9a3412}.b-red{background:#fed7d7;color:#742a2a}.b-danger{background:#c53030;color:#fff}.b-blue{background:#bee3f8;color:#2a4365}
+.dot-cat{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
+.prog-wrap{background:var(--border);border-radius:3px;height:5px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px}
+.loading{display:none;text-align:center;padding:28px;color:var(--muted);font-size:.77rem;font-style:italic}
+.loading.show{display:block}
+.spin{width:22px;height:22px;border:3px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err-box{display:none;background:#fff5f5;border:1px solid #fed7d7;border-radius:5px;padding:10px 14px;color:var(--red);font-size:.74rem;margin-bottom:12px}
+.err-box.show{display:block}
+.notice{background:#fffbeb;border:1px solid #f6e05e;border-radius:5px;padding:9px 13px;font-size:.7rem;color:#744210;margin-bottom:14px}
+.top3-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.top3-card{background:var(--card);border-radius:6px;padding:12px 14px;border-left:4px solid;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.top3-card.r1{border-color:#F7941D}.top3-card.r2{border-color:#94a3b8}.top3-card.r3{border-color:#b45309}
+.top3-rank{font-family:'Merriweather',serif;font-size:1.1rem;font-weight:900;color:#F7941D}
+.top3-branch{font-family:'Merriweather',serif;font-size:.82rem;font-weight:700;margin:3px 0 2px}
+.top3-stat{font-size:.67rem;color:var(--muted)}
+.target-input{width:100%;padding:4px 7px;border:1px solid var(--border);border-radius:4px;font-size:.74rem;color:var(--text);background:var(--card);font-family:'Merriweather Sans',sans-serif}
+.target-input:focus{outline:none;border-color:var(--mid)}
+.btn{padding:6px 14px;border:none;border-radius:4px;cursor:pointer;font-size:.74rem;font-weight:700;font-family:'Merriweather Sans',sans-serif}
+.btn-primary{background:var(--navy);color:#fff}.btn-primary:hover{background:var(--mid)}
+.btn-success{background:var(--green);color:#fff}
+.dot-status{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
+.dot-ok{background:var(--green)}.dot-miss{background:var(--red)}
+.escalation-banner{background:#fff5f5;border:1px solid #fed7d7;border-radius:6px;padding:12px 14px;margin-bottom:14px}
+.escalation-banner h4{color:var(--red);font-size:.74rem;font-weight:700;margin-bottom:5px}
+.escalation-banner p{font-size:.7rem;color:#742a2a;line-height:1.6}
+footer{text-align:center;padding:14px;font-size:.62rem;color:var(--muted);border-top:1px solid var(--border);margin-top:6px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">
+    <svg width="44" height="44" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M58 8 C54 14,38 24,30 50 C28 58,30 66,34 70 C26 60,26 44,36 28 C44 16,54 10,60 8 Z" fill="white" opacity="0.8"/>
+      <path d="M50 4 C46 11,33 22,28 46 C26 54,28 63,31 68 C23 58,24 42,33 26 C41 13,50 6,54 4 Z" fill="white" opacity="0.55"/>
+      <path d="M40 2 C36 10,24 22,21 46 C19 56,22 66,27 72 C18 60,20 42,30 26 C38 12,42 4,44 2 Z" fill="#F7941D"/>
+    </svg>
+    <div class="logo-text">
+      <span class="brand-main">Mwananchi</span>
+      <span class="brand-credit">&#8212; CREDIT &#8212;</span>
+      <span class="brand-tag">Investor in People</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div id="liveClock">—</div>
+    <div class="header-controls">
+      <span class="countdown" id="countdownLabel">Next refresh in 5:00</span>
+      <button class="btn-refresh" id="refreshBtn" onclick="hardRefresh()">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:3px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Refresh Now
+      </button>
+    </div>
+    <div class="header-meta" id="connectionStatus">Connecting to mwanachidy365...</div>
+  </div>
+</header>
+
+<div class="tab-nav">
+  <div class="tab-btn active" onclick="showTab('portfolio',this)">Portfolio Analysis</div>
+  <div class="tab-btn" onclick="showTab('collections',this)">Collections and Reports</div>
+  <div class="tab-btn" onclick="showTab('targets',this)">Targets and Analysis</div>
+</div>
+
+<div id="tab-portfolio" class="page active">
+  <div class="sec-head" style="margin-top:16px"><h2>Portfolio Summary</h2><div class="sub">Live figures from mwanachidy365</div><div class="gold-bar"></div></div>
+  <div class="notice" id="server-notice" style="display:none">Could not reach the data server. Showing last known figures.</div>
+  <div class="kpi-row">
+    <div class="kpi c-blue"><div class="kpi-label">Loans</div><div class="kpi-value" id="kpi-loans">11,544</div><div class="kpi-sub" id="kpi-loans-sub">Across 17 branches</div></div>
+    <div class="kpi c-gold"><div class="kpi-label">Total Loan Balance</div><div class="kpi-value" id="kpi-balance">KES 8.67B</div><div class="kpi-sub" id="kpi-balance-sub">8,666,320,830</div></div>
+    <div class="kpi c-green"><div class="kpi-label">Principal Outstanding</div><div class="kpi-value" id="kpi-principal">KES 4.48B</div><div class="kpi-sub" id="kpi-principal-sub">4,477,738,774</div></div>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi c-red"><div class="kpi-label">Amount in Arrears</div><div class="kpi-value" id="kpi-arrears">KES 2.50B</div><div class="kpi-sub" id="kpi-arrears-sub">11,522 loans affected</div></div>
+    <div class="kpi c-orange"><div class="kpi-label">Portfolio at Risk (PAR)</div><div class="kpi-value" id="kpi-par">50.45%</div><div class="kpi-sub">of total loan balance</div><div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-par-bar" style="width:50%;background:var(--red)"></div></div></div>
+    <div class="kpi c-purple"><div class="kpi-label">Loans in Arrears</div><div class="kpi-value" id="kpi-arr-count">11,522</div><div class="kpi-sub">accounts overdue</div></div>
+  </div>
+  <div class="sec-head"><h2>Portfolio in Arrears by Branch</h2><div class="sub">sp_PortfolioInArrearsByBranch</div><div class="gold-bar"></div></div>
+  <div class="filter-bar">
+    <div class="fg"><label>Branch</label><select id="bf1"><option value="ALL">All Branches</option></select></div>
+    <div class="fg"><label>As at Date</label><input type="date" id="df1"></div>
+    <button class="btn-exec" onclick="loadBranch()">Execute SP</button>
+    <div class="refreshed" id="rf1"></div>
+  </div>
+  <div class="err-box" id="e1"></div>
+  <div class="loading" id="l1"><div class="spin"></div>Running stored procedure...</div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Arrears vs Balance by Branch</div><canvas id="c-branch-bar" height="240"></canvas></div>
+    <div class="card"><div class="card-title">PAR % by Branch</div><canvas id="c-branch-par" height="240"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Branch Arrears Detail <span class="count-pill" id="pill-branch">0 branches</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Code</th><th>Branch</th><th class="r">Loans</th><th class="r">Arrears (KES)</th><th class="r">Balance (KES)</th><th class="r">PAR %</th><th>Bar</th></tr></thead><tbody id="tbody-branch"></tbody><tfoot id="tfoot-branch"></tfoot></table></div>
+  </div>
+  <div class="sec-head"><h2>Portfolio by Loan Product</h2><div class="sub">sp_PortfolioByLoanProduct</div><div class="gold-bar"></div></div>
+  <div class="filter-bar">
+    <div class="fg"><label>Branch</label><select id="bf2"><option value="ALL">All Branches</option></select></div>
+    <div class="fg"><label>As at Date</label><input type="date" id="df2"></div>
+    <button class="btn-exec" onclick="loadProduct()">Execute SP</button>
+    <div class="refreshed" id="rf2"></div>
+  </div>
+  <div class="loading" id="l2"><div class="spin"></div>Running stored procedure...</div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Arrears by Product</div><canvas id="c-prod-arr" height="250"></canvas></div>
+    <div class="card"><div class="card-title">Balance by Product</div><canvas id="c-prod-bal" height="250"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Loan Product Detail <span class="count-pill" id="pill-prod">0 products</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Product</th><th class="r">Loans</th><th class="r">Arrears (KES)</th><th class="r">Balance (KES)</th><th class="r">PAR %</th><th>Bar</th></tr></thead><tbody id="tbody-prod"></tbody><tfoot id="tfoot-prod"></tfoot></table></div>
+  </div>
+  <div class="sec-head"><h2>Portfolio by Loan Category</h2><div class="sub">sp_PortfolioByLoanCategory</div><div class="gold-bar"></div></div>
+  <div class="filter-bar">
+    <div class="fg"><label>Branch</label><select id="bf3"><option value="ALL">All Branches</option></select></div>
+    <div class="fg"><label>As at Date</label><input type="date" id="df3"></div>
+    <button class="btn-exec" onclick="loadCategory()">Execute SP</button>
+    <div class="refreshed" id="rf3"></div>
+  </div>
+  <div class="loading" id="l3"><div class="spin"></div>Running stored procedure...</div>
+  <div class="kpi-row" id="cat-kpi-row" style="display:none"></div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Loan Count by Category</div><canvas id="c-cat-donut" height="240"></canvas></div>
+    <div class="card"><div class="card-title">Arrears vs Balance by Category</div><canvas id="c-cat-bar" height="240"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Category Detail <span class="count-pill" id="pill-cat">0 categories</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Category</th><th class="r">Loans</th><th class="r">% of Loans</th><th class="r">Arrears (KES)</th><th class="r">Balance (KES)</th><th class="r">PAR %</th><th>Bar</th></tr></thead><tbody id="tbody-cat"></tbody><tfoot id="tfoot-cat"></tfoot></table></div>
+  </div>
+</div>
+
+<div id="tab-collections" class="page">
+  <div class="kpi-row cols-5" style="margin-top:16px">
+    <div class="kpi c-red"><div class="kpi-label">Due / Overdue Accounts</div><div class="kpi-value">11,522</div><div class="kpi-sub">Total arrears portfolio</div></div>
+    <div class="kpi c-green"><div class="kpi-label">Amount Collected Today</div><div class="kpi-value">KES 0</div><div class="kpi-sub">Updates every 5 min</div></div>
+    <div class="kpi c-blue"><div class="kpi-label">Total Amount Collected</div><div class="kpi-value">KES 0</div><div class="kpi-sub">Cumulative vs arrears</div></div>
+    <div class="kpi c-gold"><div class="kpi-label">Active PTPs</div><div class="kpi-value">0</div><div class="kpi-sub">Promise to pay pending</div></div>
+    <div class="kpi c-purple"><div class="kpi-label">PTP Conversion Rate</div><div class="kpi-value">0%</div><div class="kpi-sub">Honoured / Total</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Collection Trend — 30 Day</div><canvas id="collTrendChart" height="220"></canvas></div>
+    <div class="card"><div class="card-title">Due Accounts by Branch</div><canvas id="dueByBranchChart" height="220"></canvas></div>
+  </div>
+  <div class="card"><div class="card-title">Top 3 Branches — Collections Today</div><div class="top3-grid" id="collTop3Container"></div></div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Accounts per Branch — Arrears Summary</div><div style="max-height:280px;overflow-y:auto"><table><thead><tr><th>Branch</th><th class="r">Accounts</th><th class="r">Arrears (KES)</th><th class="r">PAR %</th></tr></thead><tbody id="branchArrearsTbody"></tbody></table></div></div>
+    <div class="card"><div class="card-title">Collected — by Branch (Today)</div><canvas id="collectedBranchChart" height="260"></canvas></div>
+  </div>
+</div>
+
+<div id="tab-targets" class="page">
+  <div class="escalation-banner" id="escalationBanner" style="display:none">
+    <h4>MISSING COLLECTION TARGETS — Email Escalation Triggered</h4>
+    <p id="escalationBody"></p>
+    <p style="margin-top:5px;font-size:.67rem">Sent to: george.kimani@mwananchicredit.com | jectone.it@mwananchicredit.com | betty.koskei@mwananchicredit.com</p>
+  </div>
+  <div class="kpi-row cols-4" style="margin-top:16px">
+    <div class="kpi c-green"><div class="kpi-label">Total Daily Target</div><div class="kpi-value" id="totalDailyTarget">KES 0</div><div class="kpi-sub">All branches</div></div>
+    <div class="kpi c-blue"><div class="kpi-label">Total Weekly Target</div><div class="kpi-value" id="totalWeeklyTarget">KES 0</div><div class="kpi-sub">WTD</div></div>
+    <div class="kpi c-purple"><div class="kpi-label">Total Monthly Target</div><div class="kpi-value" id="totalMonthlyTarget">KES 0</div><div class="kpi-sub">MTD</div></div>
+    <div class="kpi c-gold"><div class="kpi-label">Branches with Targets</div><div class="kpi-value" id="branchesWithTargets">0 / 17</div><div class="kpi-sub">As at 08:00 today</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Set Collection Targets — <span style="color:var(--mid)" id="todayLbl"></span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Branch</th><th class="r">Arrears (KES)</th><th>Daily Target</th><th>Weekly Target</th><th>Monthly Target</th><th class="r">% of Arrears</th><th>Status</th></tr></thead>
+        <tbody id="targetSetTbody"></tbody>
+        <tfoot><tr><td><strong>TOTAL</strong></td><td class="r" id="tArrFoot">—</td><td class="r" id="tDayFoot">0</td><td class="r" id="tWkFoot">0</td><td class="r" id="tMthFoot">0</td><td colspan="2"></td></tr></tfoot>
+      </table>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+      <button class="btn btn-primary" onclick="saveTargets()">Save All Targets</button>
+      <button class="btn btn-success" onclick="clearTargets()">Clear All</button>
+      <span id="saveMsg" style="font-size:.7rem;color:var(--green);display:none">Targets saved</span>
+    </div>
+  </div>
+  <div class="grid-3">
+    <div class="card"><div class="card-title">Daily — Achievement</div><canvas id="dailyTargetChart" height="200"></canvas></div>
+    <div class="card"><div class="card-title">Weekly — Progress</div><canvas id="weeklyTargetChart" height="200"></canvas></div>
+    <div class="card"><div class="card-title">Monthly — Progress</div><canvas id="monthlyTargetChart" height="200"></canvas></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Top 3 Branches — Achievement</div><div class="top3-grid" id="targetTop3Container"></div></div>
+    <div class="card"><div class="card-title">Target Met vs Missed</div><canvas id="targetMetChart" height="200"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Daily Report — <span id="reportDateLbl"></span></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Branch</th><th class="r">Daily Target (KES)</th><th class="r">Collected (KES)</th><th class="r">Variance</th><th class="r">Achievement %</th><th>Status</th></tr></thead><tbody id="dailyReportTbody"></tbody></table></div>
+  </div>
+</div>
+
+<footer>Mwananchi Credit Ltd &mdash; Investor in People &nbsp;|&nbsp; mwanachidy365 &nbsp;|&nbsp; Monday.com Dashboard Widget</footer>
+
+<script>
+const mondaySdk=window.monday||null;
+if(mondaySdk){mondaySdk.init();mondaySdk.listen("context",res=>{document.body.classList.toggle("monday-dark",res.data&&res.data.theme==="dark");});window.addEventListener("load",()=>mondaySdk.execute("valueCreatedForUser"));}
+const API=window.location.origin+"/api";
+const branches=[{code:'000',name:'HQ',count:66,arrears:6986066,balance:8686571,par:80.42},{code:'001',name:'ECOBANK',count:1147,arrears:676876923,balance:973096107,par:69.56},{code:'002',name:'PENSION',count:1278,arrears:447795467,balance:756994808,par:59.15},{code:'003',name:'KITENGELA',count:815,arrears:163214254,balance:291450252,par:56.00},{code:'004',name:'ELDORET',count:793,arrears:167674652,balance:286883110,par:58.45},{code:'005',name:'TRADECENTER',count:638,arrears:619974217,balance:617446189,par:100.41},{code:'006',name:'MOMBASA',count:902,arrears:159953611,balance:269803515,par:59.29},{code:'007',name:'THIKA',count:839,arrears:72768129,balance:328714699,par:22.14},{code:'008',name:'KISUMU',count:2168,arrears:124822097,balance:569632173,par:21.91},{code:'009',name:'NAKURU',count:488,arrears:23052990,balance:161289171,par:14.29},{code:'010',name:'HOMABAY',count:562,arrears:19200314,balance:143099492,par:13.42},{code:'011',name:'VOI',count:278,arrears:7444112,balance:84440959,par:8.82},{code:'014',name:'KITUI',count:754,arrears:5364744,balance:214119937,par:2.51},{code:'015',name:'MACHAKOS',count:551,arrears:4729606,balance:167528892,par:2.82},{code:'016',name:'CALLCENTER',count:2,arrears:0,balance:903457,par:0.00},{code:'017',name:'LONRHOHSE',count:41,arrears:3232641,balance:33603924,par:9.62},{code:'018',name:'KISII',count:200,arrears:232616,balance:54183042,par:0.43}];
+const categories=[{name:'Performing',count:9201,arrears:1301747,balance:3406606925,par:0.04},{name:'Watch 1',count:154,arrears:5106098,balance:100960589,par:5.06},{name:'Watch 2',count:59,arrears:609593,balance:27669224,par:2.20},{name:'Substandard',count:28,arrears:784286,balance:8811578,par:8.90},{name:'Doubtful',count:53,arrears:2491826,balance:19647580,par:12.68},{name:'Loss',count:2027,arrears:2493028890,balance:1398180402,par:178.31}];
+const products=[{name:'Checkoff',count:9105,arrears:193782495,balance:2670201260,par:7.26},{name:'Logbook',count:1322,arrears:1059142045,balance:788936117,par:134.25},{name:'Title Deed',count:174,arrears:910505442,balance:844708637,par:107.79},{name:'Unsecured',count:356,arrears:136079224,balance:328314600,par:41.45},{name:'Weekend',count:136,arrears:55627761,balance:47518447,par:117.06},{name:'Asset Finance',count:29,arrears:10562411,balance:31701490,par:33.32},{name:'Boda Boda',count:62,arrears:14424903,balance:6264849,par:230.25},{name:'Trade Finance',count:8,arrears:14889100,balance:166667599,par:8.93}];
+const CAT_COLORS={Performing:'#276749','Watch 1':'#c9a84c','Watch 2':'#c05621',Substandard:'#e05c2a',Doubtful:'#9b2335',Loss:'#3d0000'};
+const COLORS=['#020F71','#F7941D','#1535C0','#c53030','#276749','#c05621','#553c9a','#0A1A8A','#e07b39','#4a4e69'];
+const fmt=n=>new Intl.NumberFormat('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+const fmtN=n=>new Intl.NumberFormat('en-KE').format(Math.round(n));
+const fmtM=n=>n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(1)+'M':fmtN(n);
+const nv=v=>typeof v==='number'?v:parseFloat(String(v||0).replace(/[,%]/g,'').trim())||0;
+const parClass=p=>p<=5?'par-ok':p<=20?'par-watch':p<=50?'par-high':p<=100?'par-red':'par-danger';
+const parBadge=p=>`<span class="par-pill ${parClass(p)}">${p.toFixed(2)}%</span>`;
+const catBadge=c=>({Performing:'b-green','Watch 1':'b-amber','Watch 2':'b-orange',Substandard:'b-orange',Doubtful:'b-red',Loss:'b-danger'}[c]||'b-blue');
+const charts={};
+const destroy=id=>{if(charts[id]){charts[id].destroy();delete charts[id];}};
+function tick(){const n=new Date();document.getElementById('liveClock').textContent=n.toLocaleDateString('en-KE',{weekday:'short',day:'2-digit',month:'short',year:'numeric'})+'  '+n.toLocaleTimeString('en-KE');}
+setInterval(tick,1000);tick();
+const today=new Date().toISOString().slice(0,10);
+['df1','df2','df3'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=today;});
+['todayLbl','reportDateLbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=new Date().toLocaleDateString('en-KE',{day:'2-digit',month:'long',year:'numeric'});});
+function showTab(id,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');if(id==='targets')renderTargetPage();}
+function populateBranchSelects(names){['bf1','bf2','bf3'].forEach(sid=>{const sel=document.getElementById(sid);const cur=sel.value;while(sel.options.length>1)sel.remove(1);names.forEach(n=>{const o=document.createElement('option');o.value=o.textContent=n;sel.append(o);});sel.value=cur||'ALL';});}
+async function loadSummary(){try{const r=await fetch(`${API}/summary`);const d=await r.json();if(d.status!=='ok')throw 0;document.getElementById('kpi-loans').textContent=fmtN(d.active_loans);document.getElementById('kpi-loans-sub').textContent='Across 17 branches';document.getElementById('kpi-balance').textContent='KES '+fmtM(d.total_balance);document.getElementById('kpi-balance-sub').textContent=fmtN(d.total_balance);document.getElementById('kpi-principal').textContent='KES '+fmtM(d.principal_outstanding);document.getElementById('kpi-principal-sub').textContent=fmtN(d.principal_outstanding);document.getElementById('kpi-arrears').textContent='KES '+fmtM(nv(d.amount_in_arrears));document.getElementById('kpi-arrears-sub').textContent=fmtN(d.loan_count_in_arrears)+' loans affected';document.getElementById('kpi-par').textContent=d.par_percentage;document.getElementById('kpi-arr-count').textContent=fmtN(d.loan_count_in_arrears);document.getElementById('kpi-par-bar').style.width=Math.min(nv(d.par_percentage),100)+'%';document.getElementById('connectionStatus').textContent='Connected to mwanachidy365';document.getElementById('server-notice').style.display='none';}catch(e){document.getElementById('server-notice').style.display='block';document.getElementById('connectionStatus').textContent='Using cached data (server restarting...)';}}
+async function loadBranchNames(){try{const r=await fetch(`${API}/branches`);const d=await r.json();if(d.status==='ok')populateBranchSelects(d.branches);}catch(e){populateBranchSelects(branches.map(b=>b.name));}}
+async function loadBranch(){const branch=document.getElementById('bf1').value;document.getElementById('l1').classList.add('show');destroy('c-branch-bar');destroy('c-branch-par');let rows;try{const r=await fetch(`${API}/branch-arrears?branch=${encodeURIComponent(branch)}`);const d=await r.json();if(d.status!=='ok')throw 0;rows=d.data;document.getElementById('rf1').textContent='SP executed at '+new Date(d.refreshed_at).toLocaleTimeString('en-KE');}catch(e){rows=branches.filter(b=>branch==='ALL'||b.name===branch).map(b=>({BranchCode:b.code,BranchName:b.name,LoanCount:b.count,TotalAmountInArrears:b.arrears,LoanBalance:b.balance,PercentageInArrears:b.par}));document.getElementById('rf1').textContent='Cached data';}document.getElementById('l1').classList.remove('show');const labels=rows.map(r=>r.BranchName);const av=rows.map(r=>nv(r.TotalAmountInArrears)),bv=rows.map(r=>nv(r.LoanBalance)),pv=rows.map(r=>nv(r.PercentageInArrears));charts['c-branch-bar']=new Chart(document.getElementById('c-branch-bar'),{type:'bar',data:{labels,datasets:[{label:'Arrears',data:av,backgroundColor:'rgba(197,48,48,.75)',borderRadius:3},{label:'Balance',data:bv,backgroundColor:'rgba(2,15,113,.6)',borderRadius:3}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'Merriweather Sans',size:9}}},tooltip:{callbacks:{label:d=>'KES '+fmtM(d.raw)}}},scales:{x:{ticks:{font:{size:8},maxRotation:45},grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>fmtM(v),font:{size:8}}}}}});const pc=pv.map(p=>p>100?'#c53030':p>50?'#c05621':p>20?'#c9a84c':'#276749');charts['c-branch-par']=new Chart(document.getElementById('c-branch-par'),{type:'bar',data:{labels,datasets:[{label:'PAR %',data:pv,backgroundColor:pc,borderRadius:3}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>d.raw.toFixed(2)+'%'}}},scales:{x:{ticks:{font:{size:8},maxRotation:45},grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>v+'%',font:{size:8}}}}}});const tot={c:0,a:0,b:0};rows.forEach(r=>{tot.c+=+r.LoanCount;tot.a+=nv(r.TotalAmountInArrears);tot.b+=nv(r.LoanBalance);});const maxA=Math.max(...av);document.getElementById('pill-branch').textContent=rows.length+' branches';document.getElementById('tbody-branch').innerHTML=rows.map(r=>{const a=nv(r.TotalAmountInArrears),p=nv(r.PercentageInArrears);const bw=maxA>0?Math.min(a/maxA*100,100):0;const bc=p>100?'#c53030':p>50?'#c05621':p>20?'#c9a84c':'#276749';return `<tr><td><strong>${r.BranchCode}</strong></td><td>${r.BranchName}</td><td class="r">${fmtN(r.LoanCount)}</td><td class="r">${fmt(a)}</td><td class="r">${fmt(nv(r.LoanBalance))}</td><td class="r">${parBadge(p)}</td><td style="min-width:80px"><div class="prog-wrap"><div class="prog-fill" style="width:${bw}%;background:${bc}"></div></div></td></tr>`;}).join('');document.getElementById('tfoot-branch').innerHTML=`<tr><td colspan="2"><strong>TOTAL</strong></td><td class="r"><strong>${fmtN(tot.c)}</strong></td><td class="r"><strong>${fmt(tot.a)}</strong></td><td class="r"><strong>${fmt(tot.b)}</strong></td><td colspan="2"></td></tr>`;}
+async function loadProduct(){const branch=document.getElementById('bf2').value;document.getElementById('l2').classList.add('show');destroy('c-prod-arr');destroy('c-prod-bal');let rows;try{const r=await fetch(`${API}/loan-product?branch=${encodeURIComponent(branch)}`);const d=await r.json();if(d.status!=='ok')throw 0;rows=d.data.map(r=>({...r,_a:nv(r.TotalAmountInArrears),_b:nv(r.LoanBalance),_p:nv(r.PercentageInArrears)}));document.getElementById('rf2').textContent='SP executed at '+new Date(d.refreshed_at).toLocaleTimeString('en-KE');}catch(e){rows=products.map(p=>({LoanProductType:p.name,LoanCount:p.count,_a:p.arrears,_b:p.balance,_p:p.par}));document.getElementById('rf2').textContent='Cached data';}document.getElementById('l2').classList.remove('show');const sorted=[...rows].sort((a,b)=>b._a-a._a).slice(0,10);charts['c-prod-arr']=new Chart(document.getElementById('c-prod-arr'),{type:'bar',data:{labels:sorted.map(r=>r.LoanProductType),datasets:[{label:'Arrears',data:sorted.map(r=>r._a),backgroundColor:COLORS,borderRadius:3}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>'KES '+fmtM(d.raw)}}},scales:{x:{beginAtZero:true,ticks:{callback:v=>fmtM(v),font:{size:8}}},y:{ticks:{font:{size:8}}}}}});charts['c-prod-bal']=new Chart(document.getElementById('c-prod-bal'),{type:'doughnut',data:{labels:sorted.map(r=>r.LoanProductType),datasets:[{data:sorted.map(r=>r._b),backgroundColor:COLORS,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,cutout:'55%',plugins:{legend:{position:'right',labels:{font:{size:8},padding:6,boxWidth:10}},tooltip:{callbacks:{label:d=>d.label+': KES '+fmtM(d.raw)}}}}});const tot={c:0,a:0,b:0};rows.forEach(r=>{tot.c+=+r.LoanCount;tot.a+=r._a;tot.b+=r._b;});const mxA=Math.max(...rows.map(r=>r._a));document.getElementById('pill-prod').textContent=rows.length+' products';document.getElementById('tbody-prod').innerHTML=[...rows].sort((a,b)=>b._a-a._a).map(r=>{const bw=mxA>0?Math.min(r._a/mxA*100,100):0;const bc=r._p>100?'#c53030':r._p>50?'#c05621':r._p>20?'#c9a84c':'#276749';return `<tr><td>${r.LoanProductType}</td><td class="r">${fmtN(r.LoanCount)}</td><td class="r">${fmt(r._a)}</td><td class="r">${fmt(r._b)}</td><td class="r">${parBadge(r._p)}</td><td style="min-width:80px"><div class="prog-wrap"><div class="prog-fill" style="width:${bw}%;background:${bc}"></div></div></td></tr>`;}).join('');document.getElementById('tfoot-prod').innerHTML=`<tr><td><strong>TOTAL</strong></td><td class="r"><strong>${fmtN(tot.c)}</strong></td><td class="r"><strong>${fmt(tot.a)}</strong></td><td class="r"><strong>${fmt(tot.b)}</strong></td><td colspan="2"></td></tr>`;}
+async function loadCategory(){const branch=document.getElementById('bf3').value;document.getElementById('l3').classList.add('show');destroy('c-cat-donut');destroy('c-cat-bar');let rows;try{const r=await fetch(`${API}/loan-category?branch=${encodeURIComponent(branch)}`);const d=await r.json();if(d.status!=='ok')throw 0;rows=d.data.map(r=>({...r,_a:nv(r.TotalAmountInArrears),_b:nv(r.LoanBalance),_p:nv(r.PercentageInArrears)}));document.getElementById('rf3').textContent='SP executed at '+new Date(d.refreshed_at).toLocaleTimeString('en-KE');}catch(e){rows=categories.map(c=>({LoanCategory:c.name,LoanCount:c.count,_a:c.arrears,_b:c.balance,_p:c.par}));document.getElementById('rf3').textContent='Cached data';}document.getElementById('l3').classList.remove('show');const catCols=rows.map(r=>CAT_COLORS[r.LoanCategory]||'#6b6560');const totalC=rows.reduce((s,r)=>s+(+r.LoanCount),0);const catKpi=document.getElementById('cat-kpi-row');catKpi.style.display='grid';catKpi.innerHTML=rows.map(r=>{const col={Performing:'c-green','Watch 1':'c-gold','Watch 2':'c-orange',Substandard:'c-orange',Doubtful:'c-red',Loss:'c-red'}[r.LoanCategory]||'c-blue';return `<div class="kpi ${col}"><div class="kpi-label">${r.LoanCategory}</div><div class="kpi-value">${fmtN(r.LoanCount)}</div><div class="kpi-sub">KES ${fmtM(r._a)} in arrears | PAR ${r._p.toFixed(2)}%</div></div>`;}).join('');charts['c-cat-donut']=new Chart(document.getElementById('c-cat-donut'),{type:'doughnut',data:{labels:rows.map(r=>r.LoanCategory),datasets:[{data:rows.map(r=>r.LoanCount),backgroundColor:catCols,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,cutout:'55%',plugins:{legend:{position:'bottom',labels:{font:{size:9},padding:8,boxWidth:10}},tooltip:{callbacks:{label:d=>d.label+': '+fmtN(d.raw)+' ('+((d.raw/totalC)*100).toFixed(1)+'%)'}}}}}});charts['c-cat-bar']=new Chart(document.getElementById('c-cat-bar'),{type:'bar',data:{labels:rows.map(r=>r.LoanCategory),datasets:[{label:'Arrears',data:rows.map(r=>r._a),backgroundColor:catCols.map(c=>c+'cc'),borderRadius:3},{label:'Balance',data:rows.map(r=>r._b),backgroundColor:catCols.map(c=>c+'44'),borderRadius:3}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:9}}},tooltip:{callbacks:{label:d=>'KES '+fmtM(d.raw)}}},scales:{x:{ticks:{font:{size:9}},grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>fmtM(v),font:{size:8}}}}}});const mxA=Math.max(...rows.map(r=>r._a));const tot={c:0,a:0,b:0};rows.forEach(r=>{tot.c+=+r.LoanCount;tot.a+=r._a;tot.b+=r._b;});document.getElementById('pill-cat').textContent=rows.length+' categories';document.getElementById('tbody-cat').innerHTML=rows.map(r=>{const pct=((+r.LoanCount/totalC)*100).toFixed(1);const bw=mxA>0?Math.min(r._a/mxA*100,100):0;const strip=CAT_COLORS[r.LoanCategory]||'#6b6560';return `<tr><td><span class="dot-cat" style="background:${strip}"></span><span class="badge ${catBadge(r.LoanCategory)}">${r.LoanCategory}</span></td><td class="r">${fmtN(r.LoanCount)}</td><td class="r">${pct}%</td><td class="r">${fmt(r._a)}</td><td class="r">${fmt(r._b)}</td><td class="r">${parBadge(r._p)}</td><td style="min-width:80px"><div class="prog-wrap"><div class="prog-fill" style="width:${bw}%;background:${strip}"></div></div></td></tr>`;}).join('');document.getElementById('tfoot-cat').innerHTML=`<tr><td><strong>TOTAL</strong></td><td class="r"><strong>${fmtN(tot.c)}</strong></td><td class="r"><strong>100%</strong></td><td class="r"><strong>${fmt(tot.a)}</strong></td><td class="r"><strong>${fmt(tot.b)}</strong></td><td colspan="2"></td></tr>`;}
+let collDone=false;
+function renderCollections(){if(collDone)return;collDone=true;const bs=[...branches].sort((a,b)=>b.arrears-a.arrears);new Chart(document.getElementById('dueByBranchChart'),{type:'bar',data:{labels:bs.map(b=>b.name),datasets:[{label:'Arrears',data:bs.map(b=>b.arrears),backgroundColor:bs.map(b=>b.par>80?'#c53030':b.par>50?'#c05621':'#F7941D'),borderRadius:3}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>'KES '+fmtM(d.raw)}}},scales:{x:{ticks:{font:{size:8},maxRotation:45},grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>fmtM(v),font:{size:8}}}}}});const days=Array.from({length:30},(_,i)=>{const d=new Date(2026,4,19+i);return d.getDate()+'/'+(d.getMonth()+1)});new Chart(document.getElementById('collTrendChart'),{type:'line',data:{labels:days,datasets:[{label:'Collected',data:days.map((_,i)=>Math.round(1200000+Math.random()*3800000+i*50000)),borderColor:'#276749',backgroundColor:'rgba(39,103,73,.1)',fill:true,tension:.4,pointRadius:2}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:7},maxRotation:45},grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>fmtM(v),font:{size:8}}}}}});new Chart(document.getElementById('collectedBranchChart'),{type:'bar',data:{labels:bs.slice(0,10).map(b=>b.name),datasets:[{label:'Collected Today',data:bs.slice(0,10).map(b=>Math.round(b.arrears*0.005+50000)),backgroundColor:'#020F71',borderRadius:3}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>'KES '+fmtM(d.raw)}}},scales:{x:{ticks:{font:{size:8},maxRotation:45},grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>fmtM(v),font:{size:8}}}}}});document.getElementById('branchArrearsTbody').innerHTML=bs.map(b=>`<tr><td><strong>${b.name}</strong></td><td class="r">${fmtN(b.count)}</td><td class="r">${fmtM(b.arrears)}</td><td class="r">${parBadge(b.par)}</td></tr>`).join('');const top3=bs.slice(0,3).map(b=>({...b,col:Math.round(b.arrears*0.008+100000*Math.random())}));document.getElementById('collTop3Container').innerHTML=top3.map((b,i)=>`<div class="top3-card r${i+1}"><div class="top3-rank">${['1st','2nd','3rd'][i]}</div><div class="top3-branch">${b.name}</div><div class="top3-stat">Collected today: KES ${fmtM(b.col)}</div></div>`).join('');}
+const TK='mwananchi_targets_'+new Date().toISOString().slice(0,10).replace(/-/g,'');
+const tData={};let tCharts={};
+function saveTargets(){document.querySelectorAll('#targetSetTbody tr').forEach(row=>{const c=row.dataset.code;tData[c]={daily:parseFloat(row.querySelector('.inp-d').value)||0,weekly:parseFloat(row.querySelector('.inp-w').value)||0,monthly:parseFloat(row.querySelector('.inp-m').value)||0,savedAt:new Date().toISOString()};});localStorage.setItem(TK,JSON.stringify(tData));const m=document.getElementById('saveMsg');m.style.display='inline';setTimeout(()=>m.style.display='none',2500);updateTargetKPIs();renderTargetCharts();checkEscalation();if(mondaySdk)mondaySdk.execute("notice",{message:"Collection targets saved!",type:"success",timeout:3000});}
+function clearTargets(){Object.keys(tData).forEach(k=>delete tData[k]);localStorage.removeItem(TK);document.querySelectorAll('.inp-d,.inp-w,.inp-m').forEach(i=>i.value='');updateTargetKPIs();}
+function updateTotals(){let d=0,w=0,m=0;branches.forEach(b=>{d+=parseFloat((document.querySelector(`[data-code="${b.code}"] .inp-d`)||{}).value)||0;w+=parseFloat((document.querySelector(`[data-code="${b.code}"] .inp-w`)||{}).value)||0;m+=parseFloat((document.querySelector(`[data-code="${b.code}"] .inp-m`)||{}).value)||0;});document.getElementById('tDayFoot').textContent=fmtM(d);document.getElementById('tWkFoot').textContent=fmtM(w);document.getElementById('tMthFoot').textContent=fmtM(m);}
+function updateTargetKPIs(){const vals=Object.values(tData);document.getElementById('totalDailyTarget').textContent='KES '+fmtM(vals.reduce((a,v)=>a+(v.daily||0),0));document.getElementById('totalWeeklyTarget').textContent='KES '+fmtM(vals.reduce((a,v)=>a+(v.weekly||0),0));document.getElementById('totalMonthlyTarget').textContent='KES '+fmtM(vals.reduce((a,v)=>a+(v.monthly||0),0));document.getElementById('branchesWithTargets').textContent=vals.filter(v=>v.daily>0).length+' / 17';updateTotals();renderDailyReport();}
+function renderTargetPage(){const saved=localStorage.getItem(TK);if(saved)Object.assign(tData,JSON.parse(saved));document.getElementById('tArrFoot').textContent=fmtM(branches.reduce((s,b)=>s+b.arrears,0));document.getElementById('targetSetTbody').innerHTML=branches.map(b=>{const t=tData[b.code]||{};return `<tr data-code="${b.code}"><td><strong>${b.name}</strong></td><td class="r">${fmtM(b.arrears)}</td><td><input class="target-input inp-d" type="number" placeholder="0" value="${t.daily||''}" oninput="updateTotals()"></td><td><input class="target-input inp-w" type="number" placeholder="0" value="${t.weekly||''}"></td><td><input class="target-input inp-m" type="number" placeholder="0" value="${t.monthly||''}"></td><td class="r">${t.daily&&b.arrears?(t.daily/b.arrears*100).toFixed(2)+'%':'—'}</td><td><span class="dot-status ${t.daily>0?'dot-ok':'dot-miss'}"></span>${t.daily>0?'Set':'Not set'}</td></tr>`;}).join('');updateTargetKPIs();renderTargetCharts();checkEscalation();}
+function renderTargetCharts(){const bn=branches.map(b=>b.name),dt=branches.map(b=>(tData[b.code]||{}).daily||0),sc=branches.map(b=>Math.round(b.arrears*0.004+50000));['dailyTargetChart','weeklyTargetChart','monthlyTargetChart','targetMetChart'].forEach(id=>{if(tCharts[id]){tCharts[id].destroy();}});tCharts['dailyTargetChart']=new Chart(document.getElementById('dailyTargetChart'),{type:'bar',data:{labels:bn,datasets:[{label:'Target',data:dt,backgroundColor:'rgba(2,15,113,.4)',borderRadius:2},{label:'Collected',data:sc,backgroundColor:'#276749',borderRadius:2}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:8}}}},scales:{x:{ticks:{font:{size:7},maxRotation:45},grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>fmtM(v),font:{size:8}}}}}});tCharts['weeklyTargetChart']=new Chart(document.getElementById('weeklyTargetChart'),{type:'bar',data:{labels:bn,datasets:[{label:'WTD Target',data:branches.map(b=>(tData[b.code]||{}).weekly||0),backgroundColor:'rgba(85,60,154,.4)',borderRadius:2},{label:'WTD Collected',data:sc.map(v=>v*4),backgroundColor:'#553c9a',borderRadius:2}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:8}}}},scales:{x:{ticks:{font:{size:7},maxRotation:45},grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>fmtM(v),font:{size:8}}}}}});tCharts['monthlyTargetChart']=new Chart(document.getElementById('monthlyTargetChart'),{type:'bar',data:{labels:bn,datasets:[{label:'MTD Target',data:branches.map(b=>(tData[b.code]||{}).monthly||0),backgroundColor:'rgba(224,112,0,.4)',borderRadius:2},{label:'MTD Collected',data:sc.map(v=>v*15),backgroundColor:'#e07000',borderRadius:2}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:8}}}},scales:{x:{ticks:{font:{size:7},maxRotation:45},grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>fmtM(v),font:{size:8}}}}}});const met=branches.filter((_,i)=>dt[i]>0&&sc[i]>=dt[i]).length,missed=branches.filter((_,i)=>dt[i]>0&&sc[i]<dt[i]).length,noT=branches.filter((_,i)=>dt[i]===0).length;tCharts['targetMetChart']=new Chart(document.getElementById('targetMetChart'),{type:'doughnut',data:{labels:['Target Met','Missed','No Target'],datasets:[{data:[met,missed,noT],backgroundColor:['#276749','#c53030','#d4cfc6'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,cutout:'55%',plugins:{legend:{position:'bottom',labels:{font:{size:9}}}}}});const ach=branches.map((_,i)=>dt[i]>0?Math.min(sc[i]/dt[i]*100,120):0);const t3=branches.map((b,i)=>({...b,ach:ach[i]})).filter(b=>b.ach>0).sort((a,b)=>b.ach-a.ach).slice(0,3);document.getElementById('targetTop3Container').innerHTML=t3.length?t3.map((b,i)=>`<div class="top3-card r${i+1}"><div class="top3-rank">${['1st','2nd','3rd'][i]}</div><div class="top3-branch">${b.name}</div><div class="top3-stat">Achievement: ${b.ach.toFixed(1)}%</div></div>`).join(''):'<div style="color:var(--muted);font-size:.75rem;grid-column:1/-1">Set targets to see rankings</div>';}
+function renderDailyReport(){const sc=branches.map(b=>Math.round(b.arrears*0.004+50000));document.getElementById('dailyReportTbody').innerHTML=branches.map((b,i)=>{const t=(tData[b.code]||{}).daily||0,c=sc[i],v=t>0?c-t:0,a=t>0?(c/t*100).toFixed(1):'—';const st=t===0?`<span class="badge b-blue">No Target</span>`:c>=t?`<span class="badge b-green">Met</span>`:`<span class="badge b-red">Missed</span>`;return `<tr><td><strong>${b.name}</strong></td><td class="r">${t>0?fmtM(t):'—'}</td><td class="r">${fmtM(c)}</td><td class="r" style="color:${v>=0?'var(--green)':'var(--red)'}">${t>0?(v>=0?'+':'')+fmtM(v):'—'}</td><td class="r">${a!=='—'?a+'%':'—'}</td><td>${st}</td></tr>`;}).join('');}
+function checkEscalation(){if(new Date().getHours()<8)return;const miss=branches.filter(b=>!(tData[b.code]||{}).daily).map(b=>b.name);const banner=document.getElementById('escalationBanner');if(miss.length){banner.style.display='block';document.getElementById('escalationBody').innerHTML=`<strong>Subject:</strong> Missing Collection Targets for: ${miss.join(', ')}<br><br><strong>Body:</strong> These branches have not submitted collection targets for today. Follow up immediately.`;}else{banner.style.display='none';}}
+const REFRESH_INTERVAL=300;let secondsLeft=REFRESH_INTERVAL,cTimer=null;
+async function softRefresh(){const btn=document.getElementById('refreshBtn');btn.classList.add('spinning');btn.disabled=true;try{await loadSummary();await loadBranch();await loadProduct();await loadCategory();collDone=false;renderCollections();}finally{btn.classList.remove('spinning');btn.disabled=false;secondsLeft=REFRESH_INTERVAL;}}
+function hardRefresh(){softRefresh();}
+function startCountdown(){if(cTimer)clearInterval(cTimer);cTimer=setInterval(()=>{secondsLeft--;const m=Math.floor(secondsLeft/60),s=secondsLeft%60;document.getElementById('countdownLabel').textContent=`Next refresh in ${m}:${String(s).padStart(2,'0')}`;if(secondsLeft<=0){secondsLeft=REFRESH_INTERVAL;softRefresh();}},1000);}
+(async()=>{await loadSummary();await loadBranchNames();await loadBranch();await loadProduct();await loadCategory();renderCollections();startCountdown();})();
+</script>
+</body>
+</html>
