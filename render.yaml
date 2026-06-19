@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: mwananchi-portfolio
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 2 --timeout 120 --bind 0.0.0.0:$PORT
+    envVars:
+      - key: SQL_SERVER
+        value: 173.249.59.109
+      - key: SQL_DATABASE
+        value: mwanachidy365
+      - key: SQL_USER
+        value: monday
+      - key: SQL_PASSWORD
+        sync: false          # Set this manually in Render dashboard (keeps password secret)
