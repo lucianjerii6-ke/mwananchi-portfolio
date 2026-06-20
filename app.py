@@ -25,7 +25,7 @@ CORS(app)
 # ── Credentials — read from environment variables (set in Render dashboard)
 SQL_SERVER   = os.environ.get("SQL_SERVER",   "173.249.59.109")
 SQL_PORT     = int(os.environ.get("SQL_PORT", "1433"))
-SQL_DATABASE = os.environ.get("SQL_DATABASE", "mwanachidy365")
+SQL_DATABASE = os.environ.get("SQL_DATABASE", "mwananchidy365")
 SQL_USER     = os.environ.get("SQL_USER",     "monday")
 SQL_PASSWORD = os.environ.get("SQL_PASSWORD", "Monday@2026")
 
