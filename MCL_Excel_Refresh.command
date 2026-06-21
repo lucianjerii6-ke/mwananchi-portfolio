@@ -47,7 +47,9 @@ pip install pymssql --prefer-binary --quiet 2>/dev/null \
   || fail "pymssql install failed"
 pip install openpyxl --quiet 2>/dev/null \
   || fail "openpyxl install failed"
-ok "All packages ready"
+pip install google-api-python-client google-auth-oauthlib google-auth-httplib2 --quiet 2>/dev/null \
+  && ok "All packages ready (including Google Drive)" \
+  || ok "Core packages ready (Drive upload packages skipped)"
 
 # ── STEP 3: SQL credentials ──────────────────────────────────
 step 3 "SQL credentials..."
@@ -119,26 +121,57 @@ if [ $EXIT_CODE -ne 0 ]; then
   exit 1
 fi
 
-# ── STEP 6: Open Excel ────────────────────────────────────────
+# ── STEP 6: Determine output file path ───────────────────────
 if [ "$BRANCH_UPPER" = "ALL" ]; then
   EXCEL_FILE="$REPO_DIR/MCL_Portfolio_${AS_AT_DATE}.xlsx"
 else
   EXCEL_FILE="$REPO_DIR/MCL_Portfolio_${AS_AT_DATE}_${BRANCH_UPPER}.xlsx"
 fi
+
+# ── STEP 7: Copy to Desktop + LIVE alias ─────────────────────
+step 7 "Copying to Desktop for Claude..."
+DESKTOP_LIVE="$HOME/Desktop/MCL_Portfolio_LIVE.xlsx"
+DESKTOP_DATED="$HOME/Desktop/MCL_Portfolio_${AS_AT_DATE}${BRANCH_UPPER:+_${BRANCH_UPPER}}.xlsx"
+if [ "$BRANCH_UPPER" = "ALL" ]; then
+  DESKTOP_DATED="$HOME/Desktop/MCL_Portfolio_${AS_AT_DATE}.xlsx"
+fi
+
 if [ -f "$EXCEL_FILE" ]; then
-  echo "  Opening Excel..."
-  open "$EXCEL_FILE"
+  cp "$EXCEL_FILE" "$DESKTOP_LIVE"    # fixed name for Claude to always find
+  cp "$EXCEL_FILE" "$DESKTOP_DATED"   # dated copy for your records
+  ok "Saved to Desktop:"
+  echo "       LIVE:  $DESKTOP_LIVE"
+  echo "       Dated: $DESKTOP_DATED"
+else
+  echo "       Warning: Excel file not found at $EXCEL_FILE"
+fi
+
+# ── STEP 8: Upload to Google Drive ───────────────────────────
+step 8 "Uploading to Google Drive..."
+"$VENV/bin/python3" "$REPO_DIR/drive_upload.py" "$DESKTOP_LIVE" "$AS_AT_DATE" "$BRANCH_UPPER" 2>/dev/null \
+  && ok "Uploaded to Drive — Claude can now read it directly" \
+  || echo "       Drive upload skipped (drag MCL_Portfolio_LIVE.xlsx from Desktop to Claude instead)"
+
+# ── STEP 9: Open Excel ───────────────────────────────────────
+step 9 "Opening Excel..."
+if [ -f "$DESKTOP_DATED" ]; then
+  open "$DESKTOP_DATED"
 fi
 
 echo ""
 echo "========================================================"
 echo "  DONE — Portfolio Excel is ready"
-echo "  Date:  $AS_AT_DATE"
-echo "  File:  $EXCEL_FILE"
+echo "  Date:   $AS_AT_DATE"
+echo "  Branch: $BRANCH_UPPER"
+echo "  File:   $DESKTOP_DATED"
 echo ""
-echo "  To get Claude's analysis:"
-echo "    1. Upload the Excel file to Claude in Cowork"
-echo "    2. Ask: Analyse this portfolio and write a report"
+echo "  HOW TO GET YOUR CLAUDE REPORT:"
+echo "    Option A (auto): If Drive upload succeeded above,"
+echo "                     just ask Claude: 'Generate portfolio report'"
+echo ""
+echo "    Option B (drag): Drag MCL_Portfolio_LIVE.xlsx from"
+echo "                     your Desktop into Claude Cowork"
+echo "                     then ask: 'Generate portfolio report'"
 echo "========================================================"
 echo ""
 echo "  Press Enter to close this window."
