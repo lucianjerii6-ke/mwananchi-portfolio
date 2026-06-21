@@ -3,105 +3,126 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mwananchi Credit — Portfolio Report | 18 June 2026</title>
+<title>Mwananchi Credit — Portfolio Report</title>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Figtree',sans-serif;background:#F5F6FA;color:#1a1a2e;font-size:14px}
 :root{--navy:#020F71;--orange:#F7941D;--green:#15803D;--red:#DC2626;--amber:#D97706;--grey:#6B7280;--white:#fff;--light:#F5F6FA;--border:#E5E7EB}
 
+/* HEADER */
 .header{background:var(--navy);display:flex;align-items:stretch}
 .header-logo{background:var(--orange);padding:20px 28px;display:flex;align-items:center;gap:12px;min-width:220px}
 .header-logo svg{width:44px;height:44px;flex-shrink:0}
-.logo-text{color:var(--white)}
-.logo-text .brand{font-size:15px;font-weight:800;letter-spacing:.3px;line-height:1.2}
+.logo-text{color:#fff}
+.logo-text .brand{font-size:15px;font-weight:800;line-height:1.2}
 .logo-text .sub{font-size:10px;font-weight:500;opacity:.9;letter-spacing:.5px;text-transform:uppercase}
 .header-info{padding:20px 32px;flex:1;display:flex;flex-direction:column;justify-content:center;gap:4px}
-.header-title{font-size:22px;font-weight:800;color:var(--white);letter-spacing:-.3px}
-.header-meta{font-size:12px;color:rgba(255,255,255,.65);font-weight:500;letter-spacing:.2px}
-.header-badge{padding:20px 28px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:4px}
+.header-title{font-size:22px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.header-meta{font-size:12px;color:rgba(255,255,255,.6);font-weight:500}
+.header-badge{padding:20px 28px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px}
 .badge-label{font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px}
 .badge-value{font-size:13px;font-weight:700;color:var(--orange)}
 
-.strip{background:var(--orange);padding:8px 32px;font-size:12px;font-weight:600;color:var(--white);letter-spacing:.3px;display:flex;gap:32px;flex-wrap:wrap}
-.strip span{opacity:.85}
-.strip strong{opacity:1}
+/* FILTER BAR */
+.filter-bar{background:var(--navy);border-top:1px solid rgba(255,255,255,.1);padding:12px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.filter-bar label{color:rgba(255,255,255,.7);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-right:4px}
+.filter-bar input[type=date],.filter-bar select{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#fff;padding:7px 12px;font-family:'Figtree',sans-serif;font-size:13px;font-weight:600;outline:none;cursor:pointer}
+.filter-bar input[type=date]:focus,.filter-bar select:focus{border-color:var(--orange)}
+.filter-bar select option{background:#020F71;color:#fff}
+.btn-refresh{background:var(--orange);color:#fff;border:none;border-radius:6px;padding:8px 20px;font-family:'Figtree',sans-serif;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.2px;transition:opacity .15s}
+.btn-refresh:hover{opacity:.85}
+.btn-refresh:disabled{opacity:.5;cursor:not-allowed}
+.filter-status{margin-left:auto;font-size:11px;color:rgba(255,255,255,.5);font-style:italic}
 
+/* STRIP */
+.strip{background:var(--orange);padding:8px 32px;font-size:12px;font-weight:600;color:#fff;display:flex;gap:24px;flex-wrap:wrap;letter-spacing:.2px}
+.strip span{opacity:.85}.strip strong{opacity:1}
+
+/* LOADING / ERROR */
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(2,15,113,.7);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.loading-overlay.active{display:flex}
+.spinner{width:44px;height:44px;border:4px solid rgba(255,255,255,.2);border-top-color:#F7941D;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:#fff;font-size:14px;font-weight:600}
+.error-banner{display:none;background:#FEF2F2;border-left:4px solid var(--red);padding:14px 20px;margin:16px 32px;border-radius:6px;font-size:13px;color:#991B1B}
+.error-banner.active{display:block}
+
+/* PAGE */
 .page{max-width:1280px;margin:0 auto;padding:24px}
 .section-title{font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--orange);display:flex;align-items:center;gap:8px}
 .section-title .dot{width:8px;height:8px;border-radius:50%;background:var(--orange);flex-shrink:0}
 
+/* KPI GRID */
 .kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:28px}
-.kpi{background:var(--white);border-radius:10px;padding:18px 16px;border:1px solid var(--border);border-top:3px solid var(--navy);position:relative;overflow:hidden}
-.kpi.orange{border-top-color:var(--orange)}
-.kpi.red{border-top-color:var(--red)}
-.kpi.amber{border-top-color:var(--amber)}
+.kpi{background:#fff;border-radius:10px;padding:18px 16px;border:1px solid var(--border);border-top:3px solid var(--navy)}
+.kpi.orange{border-top-color:var(--orange)}.kpi.red{border-top-color:var(--red)}.kpi.amber{border-top-color:var(--amber)}
 .kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--grey);margin-bottom:6px}
 .kpi-value{font-size:22px;font-weight:800;color:var(--navy);line-height:1;margin-bottom:4px}
-.kpi-value.orange{color:var(--orange)}
-.kpi-value.red{color:var(--red)}
-.kpi-value.amber{color:var(--amber)}
+.kpi-value.orange{color:var(--orange)}.kpi-value.red{color:var(--red)}.kpi-value.amber{color:var(--amber)}
 .kpi-sub{font-size:10px;color:var(--grey);font-weight:500}
 
+/* CARDS */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
-.card{background:var(--white);border-radius:10px;padding:20px;border:1px solid var(--border)}
+.card{background:#fff;border-radius:10px;padding:20px;border:1px solid var(--border)}
 
+/* CATEGORY ROWS */
 .cat-section-head{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;padding:6px 10px;border-radius:4px;margin-bottom:10px}
-.cat-section-head.arrears{background:#FEE2E2;color:#991B1B}
-.cat-section-head.performing{background:#DCFCE7;color:#14532D}
+.cat-section-head.arrears{background:#FEE2E2;color:#991B1B}.cat-section-head.performing{background:#DCFCE7;color:#14532D}
 .cat-row{display:grid;grid-template-columns:120px 1fr 90px 90px 60px;gap:8px;align-items:center;margin-bottom:8px;font-size:12px}
-.cat-bar-wrap{background:var(--light);border-radius:3px;height:7px;overflow:hidden}
-.cat-bar{height:7px;border-radius:3px}
-.cat-amt{text-align:right;font-weight:600;color:var(--navy)}
-.cat-bal{text-align:right;color:var(--grey)}
-.cat-par{text-align:right;font-weight:700;font-size:11px}
+.cat-bar-wrap{background:var(--light);border-radius:3px;height:7px;overflow:hidden}.cat-bar{height:7px;border-radius:3px}
+.cat-amt{text-align:right;font-weight:600;color:var(--navy)}.cat-bal{text-align:right;color:var(--grey)}.cat-par{text-align:right;font-weight:700;font-size:11px}
 .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
-.pill-performing{background:#DCFCE7;color:#14532D}
-.pill-watch1{background:#FEF3C7;color:#92400E}
-.pill-watch2{background:#FFEDD5;color:#9A3412}
-.pill-substandard{background:#FEE2E2;color:#991B1B}
-.pill-doubtful{background:#EDE9FE;color:#4C1D95}
-.pill-loss{background:#1F2937;color:#F9FAFB}
+.pill-performing{background:#DCFCE7;color:#14532D}.pill-watch1{background:#FEF3C7;color:#92400E}
+.pill-watch2{background:#FFEDD5;color:#9A3412}.pill-substandard{background:#FEE2E2;color:#991B1B}
+.pill-doubtful{background:#EDE9FE;color:#4C1D95}.pill-loss{background:#1F2937;color:#F9FAFB}
 
+/* RISK STACK */
 .risk-stack{display:flex;height:28px;border-radius:6px;overflow:hidden;margin-bottom:12px}
-.risk-seg{display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;overflow:hidden}
+.risk-seg{display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;overflow:hidden;transition:width .4s}
 .risk-legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
 .risk-item{display:flex;align-items:center;gap:5px;font-size:11px}
 .risk-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
 
+/* TABLES */
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
-thead th{background:var(--navy);color:var(--white);padding:9px 10px;text-align:left;font-weight:700;font-size:11px;letter-spacing:.3px;white-space:nowrap}
+thead th{background:var(--navy);color:#fff;padding:9px 10px;text-align:left;font-weight:700;font-size:11px;letter-spacing:.3px;white-space:nowrap}
 thead th.num{text-align:right}
 tbody tr:nth-child(even){background:#FAFBFF}
 tbody tr:hover{background:#EEF2FF}
 tbody td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
 tbody td.num{text-align:right;font-weight:600;color:var(--navy)}
 tbody td.branch-name{font-weight:700}
-tfoot td{background:var(--navy);color:var(--white);padding:9px 10px;font-weight:700;font-size:11px}
+tfoot td{background:var(--navy);color:#fff;padding:9px 10px;font-weight:700;font-size:11px}
 tfoot td.num{text-align:right}
 .par-bar-wrap{background:#E5E7EB;border-radius:3px;height:6px;margin-bottom:2px}
 .par-bar{height:6px;border-radius:3px}
 .par-pct{font-size:10px;font-weight:700}
 
+/* INSIGHTS */
 .insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
-.insight{background:var(--white);border-radius:10px;padding:16px;border:1px solid var(--border);border-left:4px solid var(--grey)}
-.insight.critical{border-left-color:var(--red)}
-.insight.warn{border-left-color:var(--amber)}
-.insight.good{border-left-color:var(--green)}
+.insight{background:#fff;border-radius:10px;padding:16px;border:1px solid var(--border);border-left:4px solid var(--grey)}
+.insight.critical{border-left-color:var(--red)}.insight.warn{border-left-color:var(--amber)}.insight.good{border-left-color:var(--green)}
 .insight-head{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;color:var(--grey)}
-.insight.critical .insight-head{color:var(--red)}
-.insight.warn .insight-head{color:var(--amber)}
-.insight.good .insight-head{color:var(--green)}
+.insight.critical .insight-head{color:var(--red)}.insight.warn .insight-head{color:var(--amber)}.insight.good .insight-head{color:var(--green)}
 .insight-num{font-size:20px;font-weight:800;display:block;margin-bottom:4px}
 .insight-body{font-size:12px;color:#374151;line-height:1.5}
 
+/* FOOTER */
 .footer{background:var(--navy);color:rgba(255,255,255,.55);text-align:center;padding:14px 32px;font-size:11px;margin-top:8px}
 .footer strong{color:rgba(255,255,255,.8)}
 </style>
 </head>
 <body>
 
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Loading portfolio data...</div>
+</div>
+
+<!-- HEADER -->
 <div class="header">
   <div class="header-logo">
     <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -117,470 +138,577 @@ tfoot td.num{text-align:right}
     </div>
   </div>
   <div class="header-info">
-    <div class="header-title">Portfolio at Risk Dashboard</div>
-    <div class="header-meta">All Branches &nbsp;|&nbsp; Source: SQL Server — mwananchidy365 &nbsp;|&nbsp; Watch 1+ arrears (Performing excluded from risk metrics)</div>
+    <div class="header-title">Portfolio at Risk Report</div>
+    <div class="header-meta" id="headerMeta">All Branches &nbsp;|&nbsp; Source: SQL Server — mwananchidy365 &nbsp;|&nbsp; Watch 1+ arrears only</div>
   </div>
   <div class="header-badge">
     <div class="badge-label">As at Date</div>
-    <div class="badge-value">18 June 2026</div>
-    <div class="badge-label" style="margin-top:6px">Generated</div>
-    <div class="badge-value" style="font-size:11px;color:rgba(255,255,255,.5)">21 Jun 2026</div>
+    <div class="badge-value" id="badgeDate">—</div>
+    <div class="badge-label" style="margin-top:6px">Branch</div>
+    <div class="badge-value" id="badgeBranch" style="font-size:11px">ALL</div>
   </div>
 </div>
 
-<div class="strip">
-  <span>Active Loans: <strong>11,544</strong></span>
-  <span>Total Book: <strong>KES 8.67B</strong></span>
-  <span>Principal Outstanding: <strong>KES 4.48B</strong></span>
-  <span>Loans in Arrears (Watch 1+): <strong>2,321</strong></span>
-  <span>Amount in Arrears: <strong>KES 2.50B</strong></span>
-  <span>PAR (Balance-Based): <strong>31.34%</strong></span>
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <label for="filterDate">Date</label>
+  <input type="date" id="filterDate">
+  <label for="filterBranch" style="margin-left:8px">Branch</label>
+  <select id="filterBranch"><option value="ALL">All Branches</option></select>
+  <button class="btn-refresh" id="btnRefresh" onclick="runReport()">Generate Report</button>
+  <span class="filter-status" id="filterStatus"></span>
 </div>
 
-<div class="page">
+<!-- ORANGE SUMMARY STRIP -->
+<div class="strip" id="summaryStrip">
+  <span>Loading...</span>
+</div>
 
+<div class="error-banner" id="errorBanner"></div>
+
+<div class="page" id="reportPage" style="display:none">
+
+  <!-- KPI CARDS -->
   <div class="section-title"><span class="dot"></span>Key Performance Indicators</div>
-  <div class="kpi-grid">
+  <div class="kpi-grid" id="kpiGrid"><!-- rendered by JS --></div>
+
+  <!-- CATEGORY + PAR TABLE -->
+  <div class="two-col">
+    <div class="card" id="categoryCard"><!-- rendered by JS --></div>
+    <div class="card" id="parTable"><!-- rendered by JS --></div>
+  </div>
+
+  <!-- BRANCH TABLE -->
+  <div class="card" style="margin-bottom:28px" id="branchCard"><!-- rendered by JS --></div>
+
+  <!-- INSIGHTS -->
+  <div class="section-title"><span class="dot"></span>Portfolio Insights</div>
+  <div class="insight-grid" id="insightGrid"><!-- rendered by JS --></div>
+
+</div>
+
+<div class="footer" id="reportFooter" style="display:none">
+  <strong>Mwananchi Credit Ltd</strong> &nbsp;|&nbsp; Portfolio at Risk Report &nbsp;|&nbsp;
+  <span id="footerDate"></span> &nbsp;|&nbsp; <span id="footerBranch"></span> &nbsp;|&nbsp;
+  Source: SQL Server (mwananchidy365) &nbsp;|&nbsp; Arrears = sp_PortfolioByLoanCategory Watch 1+ &nbsp;|&nbsp; Branch = sp_PortfolioInArrearsByBranch
+</div>
+
+<script>
+const API_BASE = '';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (n === null || n === undefined) return '—';
+  const num = parseFloat(n) || 0;
+  if (Math.abs(num) >= 1e9) return 'KES ' + (num/1e9).toFixed(2) + 'B';
+  if (Math.abs(num) >= 1e6) return 'KES ' + (num/1e6).toFixed(1) + 'M';
+  if (Math.abs(num) >= 1e3) return 'KES ' + (num/1e3).toFixed(1) + 'K';
+  return 'KES ' + num.toFixed(0);
+}
+function fmtRaw(n) {
+  return parseFloat(n || 0).toLocaleString('en-KE', {maximumFractionDigits: 0});
+}
+function fmtPct(n) { return (parseFloat(n || 0)).toFixed(2) + '%'; }
+function fmtN(n)   { return parseInt(n || 0).toLocaleString('en-KE'); }
+
+// Column name resolver — tries multiple possible names
+function col(row, ...keys) {
+  for (const k of keys) {
+    if (row[k] !== undefined && row[k] !== null) return row[k];
+  }
+  return 0;
+}
+function colStr(row, ...keys) {
+  for (const k of keys) {
+    if (row[k] !== undefined && row[k] !== null) return String(row[k]);
+  }
+  return '';
+}
+function sum(rows, ...keys) {
+  return rows.reduce((acc, r) => acc + (parseFloat(col(r, ...keys)) || 0), 0);
+}
+
+const BAL_KEYS  = ['TotalOutstandingBalance','TotalLoanBalance','OutstandingBalance','LoanBalance'];
+const ARR_KEYS  = ['TotalAmountInArrears','AmountInArrears','ArrearsAmount','Arrears'];
+const CNT_KEYS  = ['TotalLoanCount','LoanCount','Count','NumberOfLoans','LoansCount'];
+const PAR_KEYS  = ['PARPercentage','PAR_Percentage','PAR','PARPct','PercentageInArrears','PAR%'];
+const CAT_KEYS  = ['LoanCategory','Category','LoanClassification'];
+const BRNCH_KEYS= ['BranchName','Branch','BranchCode','BranchTitle'];
+const ACT_KEYS  = ['ActiveLoanCount','LoanCount','Count'];
+const TBAL_KEYS = ['PrincipalOutstandingBalance','TotalLoanBalance','TotalBalance','TotalOutstandingBalance'];
+
+// ── Arrears KPI computation (mirrors mcl_refresh.py) ─────────────────────────
+function calcArrearsKPIs(catRows) {
+  const clean = catRows.filter(r => {
+    const cat = colStr(r, ...CAT_KEYS).toUpperCase();
+    return cat !== 'TOTAL' && cat !== '';
+  });
+  const arrearsRows = clean.filter(r =>
+    !colStr(r, ...CAT_KEYS).toUpperCase().includes('PERFORMING')
+  );
+  const amountInArrears = sum(arrearsRows, ...ARR_KEYS);
+  const loansInArrears  = Math.round(sum(arrearsRows, ...CNT_KEYS));
+  const arrearsBal      = sum(arrearsRows, ...BAL_KEYS);
+  const totalBal        = sum(clean, ...BAL_KEYS);
+  const par             = totalBal > 0 ? (arrearsBal / totalBal * 100) : 0;
+  return { amountInArrears, loansInArrears, arrearsBal, totalBal, par };
+}
+
+// ── PAR color helper ──────────────────────────────────────────────────────────
+function parColor(pct) {
+  if (pct >= 90)  return '#111827';
+  if (pct >= 50)  return '#DC2626';
+  if (pct >= 20)  return '#D97706';
+  return '#15803D';
+}
+function parWidth(pct) { return Math.min(100, pct) + '%'; }
+
+// ── Category pill ─────────────────────────────────────────────────────────────
+const CAT_STYLES = {
+  'PERFORMING':   {cls:'pill-performing', color:'#15803D', barColor:'#15803D'},
+  'WATCH 1':      {cls:'pill-watch1',     color:'#D97706', barColor:'#D97706'},
+  'WATCH 2':      {cls:'pill-watch2',     color:'#EA580C', barColor:'#EA580C'},
+  'SUBSTANDARD':  {cls:'pill-substandard',color:'#DC2626', barColor:'#DC2626'},
+  'DOUBTFUL':     {cls:'pill-doubtful',   color:'#7C3AED', barColor:'#7C3AED'},
+  'LOSS':         {cls:'pill-loss',       color:'#111827', barColor:'#111827'},
+};
+function catStyle(cat) {
+  const upper = cat.toUpperCase();
+  for (const [k, v] of Object.entries(CAT_STYLES)) {
+    if (upper.includes(k)) return v;
+  }
+  return {cls:'pill-watch1', color:'#6B7280', barColor:'#6B7280'};
+}
+
+// ── Loading state ─────────────────────────────────────────────────────────────
+function showLoading(msg) {
+  document.getElementById('loadingText').textContent = msg || 'Loading...';
+  document.getElementById('loadingOverlay').classList.add('active');
+  document.getElementById('btnRefresh').disabled = true;
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('active');
+  document.getElementById('btnRefresh').disabled = false;
+}
+function showError(msg) {
+  const el = document.getElementById('errorBanner');
+  el.textContent = '⚠ ' + msg + ' — Make sure MCL_Start_Server.command is running.';
+  el.classList.add('active');
+}
+function clearError() {
+  document.getElementById('errorBanner').classList.remove('active');
+}
+
+// ── Load branches ─────────────────────────────────────────────────────────────
+async function loadBranches() {
+  const dt = document.getElementById('filterDate').value;
+  try {
+    const res = await fetch(`${API_BASE}/api/branches?date=${dt}`);
+    const data = await res.json();
+    const sel = document.getElementById('filterBranch');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="ALL">All Branches</option>';
+    (data.branches || []).forEach(b => {
+      const o = document.createElement('option');
+      o.value = b; o.textContent = b;
+      if (b === prev) o.selected = true;
+      sel.appendChild(o);
+    });
+  } catch(e) {
+    // silently fail — user will see error on runReport
+  }
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────────────────────
+async function runReport() {
+  clearError();
+  const dt     = document.getElementById('filterDate').value;
+  const branch = document.getElementById('filterBranch').value || 'ALL';
+
+  if (!dt) { showError('Please select a date'); return; }
+
+  showLoading('Querying SQL Server...');
+
+  try {
+    // Fetch all in parallel
+    showLoading('Fetching portfolio data...');
+    const [catRes, branchRes, activeRes, totalRes, principalRes] = await Promise.all([
+      fetch(`${API_BASE}/api/loan-category?date=${dt}&branch=${branch}`),
+      fetch(`${API_BASE}/api/branch-arrears?date=${dt}&branch=${branch}`),
+      fetch(`${API_BASE}/api/summary?date=${dt}`),
+      fetch(`${API_BASE}/api/summary?date=${dt}`),
+      fetch(`${API_BASE}/api/summary?date=${dt}`),
+    ]);
+
+    const catData    = await catRes.json();
+    const branchData = await branchRes.json();
+    const summaryData= await activeRes.json();
+
+    if (catData.status !== 'ok')    throw new Error(catData.message || 'loan-category failed');
+    if (branchData.status !== 'ok') throw new Error(branchData.message || 'branch-arrears failed');
+
+    const catRows    = catData.data    || [];
+    const branchRows = branchData.data || [];
+
+    // Compute KPIs
+    const kpis      = calcArrearsKPIs(catRows);
+    const activeLns = parseFloat(col(summaryData, 'active_loans')) || 0;
+    const totalBal  = parseFloat(col(summaryData, 'total_balance')) || 0;
+    const principal = parseFloat(col(summaryData, 'principal_outstanding')) || 0;
+
+    // Update badge + strip
+    const branchLabel = branch === 'ALL' ? 'All Branches' : branch;
+    document.getElementById('badgeDate').textContent   = formatDate(dt);
+    document.getElementById('badgeBranch').textContent = branchLabel;
+    document.getElementById('headerMeta').textContent  =
+      branchLabel + ' | Source: SQL Server — mwananchidy365 | Watch 1+ arrears only';
+    document.getElementById('filterStatus').textContent =
+      'Updated ' + new Date().toLocaleTimeString();
+    document.getElementById('summaryStrip').innerHTML =
+      `<span>Active Loans: <strong>${fmtN(activeLns)}</strong></span>` +
+      `<span>Total Book: <strong>${fmt(totalBal)}</strong></span>` +
+      `<span>Principal: <strong>${fmt(principal)}</strong></span>` +
+      `<span>Loans in Arrears (Watch 1+): <strong>${fmtN(kpis.loansInArrears)}</strong></span>` +
+      `<span>Amount in Arrears: <strong>${fmt(kpis.amountInArrears)}</strong></span>` +
+      `<span>PAR: <strong>${fmtPct(kpis.par)}</strong></span>`;
+
+    // Render sections
+    renderKPIs(kpis, activeLns, totalBal, principal);
+    renderCategoryCard(catRows, kpis);
+    renderPARTable(catRows);
+    renderBranchTable(branchRows, branch);
+    renderInsights(kpis, catRows, branchRows, branch);
+
+    // Update footer
+    document.getElementById('footerDate').textContent  = formatDate(dt);
+    document.getElementById('footerBranch').textContent = branchLabel;
+
+    document.getElementById('reportPage').style.display   = 'block';
+    document.getElementById('reportFooter').style.display = 'block';
+
+  } catch(err) {
+    showError(err.message || 'Failed to load data');
+  } finally {
+    hideLoading();
+  }
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
+}
+
+// ── KPI Cards ─────────────────────────────────────────────────────────────────
+function renderKPIs(kpis, active, totalBal, principal) {
+  document.getElementById('kpiGrid').innerHTML = `
     <div class="kpi">
       <div class="kpi-label">Active Loans</div>
-      <div class="kpi-value">11,544</div>
-      <div class="kpi-sub">Total accounts under management</div>
+      <div class="kpi-value">${fmtN(active)}</div>
+      <div class="kpi-sub">Accounts under management</div>
     </div>
     <div class="kpi orange">
       <div class="kpi-label">Total Loan Balance</div>
-      <div class="kpi-value orange">KES 8.67B</div>
-      <div class="kpi-sub">8,666,320,830</div>
+      <div class="kpi-value orange">${fmt(totalBal)}</div>
+      <div class="kpi-sub">${fmtRaw(totalBal)}</div>
     </div>
     <div class="kpi">
       <div class="kpi-label">Principal Outstanding</div>
-      <div class="kpi-value">KES 4.48B</div>
-      <div class="kpi-sub">4,477,738,774</div>
+      <div class="kpi-value">${fmt(principal)}</div>
+      <div class="kpi-sub">${fmtRaw(principal)}</div>
     </div>
     <div class="kpi red">
       <div class="kpi-label">Amount in Arrears</div>
-      <div class="kpi-value red">KES 2.50B</div>
-      <div class="kpi-sub">Watch 1+ only — 2,502,020,692</div>
+      <div class="kpi-value red">${fmt(kpis.amountInArrears)}</div>
+      <div class="kpi-sub">Watch 1+ only — ${fmtRaw(kpis.amountInArrears)}</div>
     </div>
     <div class="kpi amber">
       <div class="kpi-label">Loans in Arrears</div>
-      <div class="kpi-value amber">2,321</div>
-      <div class="kpi-sub">Watch 1+ accounts (excl. Performing)</div>
+      <div class="kpi-value amber">${fmtN(kpis.loansInArrears)}</div>
+      <div class="kpi-sub">Watch 1+ accounts</div>
     </div>
     <div class="kpi red">
       <div class="kpi-label">Portfolio at Risk (PAR)</div>
-      <div class="kpi-value red">31.34%</div>
+      <div class="kpi-value red">${fmtPct(kpis.par)}</div>
       <div class="kpi-sub">Arrears balance ÷ Total portfolio</div>
+    </div>`;
+}
+
+// ── Category Card (left) ──────────────────────────────────────────────────────
+function renderCategoryCard(rows, kpis) {
+  const clean = rows.filter(r => {
+    const c = colStr(r, ...CAT_KEYS).toUpperCase();
+    return c !== 'TOTAL' && c !== '';
+  });
+  const arrRows  = clean.filter(r => !colStr(r, ...CAT_KEYS).toUpperCase().includes('PERFORMING'));
+  const perfRows = clean.filter(r =>  colStr(r, ...CAT_KEYS).toUpperCase().includes('PERFORMING'));
+  const totalBal = kpis.totalBal || 1;
+
+  // Build stack segments
+  const segments = clean.map(r => {
+    const cat  = colStr(r, ...CAT_KEYS);
+    const bal  = parseFloat(col(r, ...BAL_KEYS)) || 0;
+    const pct  = (bal / totalBal * 100);
+    const s    = catStyle(cat);
+    const label = pct > 10 ? cat : '';
+    return `<div class="risk-seg" style="width:${pct.toFixed(2)}%;background:${s.barColor}" title="${cat}: ${pct.toFixed(1)}%">${label}</div>`;
+  }).join('');
+
+  const legend = Object.entries(CAT_STYLES).map(([k, v]) => {
+    const row = clean.find(r => colStr(r, ...CAT_KEYS).toUpperCase().includes(k));
+    if (!row) return '';
+    const bal = parseFloat(col(row, ...BAL_KEYS)) || 0;
+    const pct = (bal / totalBal * 100).toFixed(1);
+    return `<div class="risk-item"><div class="risk-dot" style="background:${v.barColor}"></div>${k.charAt(0)+k.slice(1).toLowerCase()} ${pct}%</div>`;
+  }).join('');
+
+  // Arrears category rows
+  const arrHtml = arrRows.map(r => {
+    const cat  = colStr(r, ...CAT_KEYS);
+    const bal  = parseFloat(col(r, ...BAL_KEYS)) || 0;
+    const amt  = parseFloat(col(r, ...ARR_KEYS)) || 0;
+    const par  = parseFloat(col(r, ...PAR_KEYS)) || (bal > 0 ? amt/bal*100 : 0);
+    const s    = catStyle(cat);
+    const barW = Math.min(100, (bal / totalBal * 100)).toFixed(2);
+    return `<div class="cat-row">
+      <div><span class="pill ${s.cls}">${cat}</span></div>
+      <div class="cat-bar-wrap"><div class="cat-bar" style="width:${barW}%;background:${s.barColor}"></div></div>
+      <div class="cat-amt">${fmt(amt)}</div>
+      <div class="cat-bal">${fmt(bal)}</div>
+      <div class="cat-par" style="color:${s.color}">${fmtPct(par)}</div>
+    </div>`;
+  }).join('');
+
+  const perfHtml = perfRows.map(r => {
+    const cat  = colStr(r, ...CAT_KEYS);
+    const bal  = parseFloat(col(r, ...BAL_KEYS)) || 0;
+    const amt  = parseFloat(col(r, ...ARR_KEYS)) || 0;
+    const par  = parseFloat(col(r, ...PAR_KEYS)) || (bal > 0 ? amt/bal*100 : 0);
+    return `<div class="cat-row">
+      <div><span class="pill pill-performing">${cat}</span></div>
+      <div class="cat-bar-wrap"><div class="cat-bar" style="width:100%;background:#15803D"></div></div>
+      <div class="cat-amt" style="color:#15803D">${fmt(amt)}</div>
+      <div class="cat-bal" style="color:#15803D">${fmt(bal)}</div>
+      <div class="cat-par" style="color:#15803D">${fmtPct(par)}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('categoryCard').innerHTML = `
+    <div class="section-title"><span class="dot"></span>Loan Category Breakdown</div>
+    <div class="risk-stack">${segments}</div>
+    <div class="risk-legend">${legend}</div>
+    <div class="cat-section-head arrears">IN ARREARS — Watch 1+ (${fmtN(kpis.loansInArrears)} loans)</div>
+    <div class="cat-row" style="font-size:10px;color:var(--grey);font-weight:700;margin-bottom:4px">
+      <div>Category</div><div>Balance share</div><div>Arrears Amt</div><div>Balance</div><div>PAR%</div>
     </div>
-  </div>
+    ${arrHtml}
+    <div style="border-top:1px solid var(--border);margin:10px 0"></div>
+    <div class="cat-section-head performing">PERFORMING — Not in Arrears</div>
+    ${perfHtml}`;
+}
 
-  <div class="two-col">
-    <div class="card">
-      <div class="section-title"><span class="dot"></span>Loan Category Breakdown</div>
+// ── PAR Aging Table (right) ───────────────────────────────────────────────────
+function renderPARTable(rows) {
+  const clean = rows.filter(r => {
+    const c = colStr(r, ...CAT_KEYS).toUpperCase();
+    return c !== 'TOTAL' && c !== '';
+  });
 
-      <div class="risk-stack">
-        <div class="risk-seg" style="width:68.7%;background:#15803D" title="Performing 68.7%">Performing</div>
-        <div class="risk-seg" style="width:2.03%;background:#D97706" title="Watch 1"></div>
-        <div class="risk-seg" style="width:0.56%;background:#EA580C" title="Watch 2"></div>
-        <div class="risk-seg" style="width:0.18%;background:#DC2626" title="Substandard"></div>
-        <div class="risk-seg" style="width:0.40%;background:#7C3AED" title="Doubtful"></div>
-        <div class="risk-seg" style="width:28.13%;background:#111827" title="Loss">Loss</div>
-      </div>
-      <div class="risk-legend">
-        <div class="risk-item"><div class="risk-dot" style="background:#15803D"></div>Performing 68.7%</div>
-        <div class="risk-item"><div class="risk-dot" style="background:#D97706"></div>Watch 1 2.0%</div>
-        <div class="risk-item"><div class="risk-dot" style="background:#EA580C"></div>Watch 2 0.6%</div>
-        <div class="risk-item"><div class="risk-dot" style="background:#DC2626"></div>Substandard 0.2%</div>
-        <div class="risk-item"><div class="risk-dot" style="background:#7C3AED"></div>Doubtful 0.4%</div>
-        <div class="risk-item"><div class="risk-dot" style="background:#111827"></div>Loss 28.2%</div>
-      </div>
+  // Sort: Loss first, then Doubtful, Substandard, Watch2, Watch1, Performing
+  const ORDER = ['LOSS','DOUBTFUL','SUBSTANDARD','WATCH 2','WATCH 1','PERFORMING'];
+  clean.sort((a, b) => {
+    const ai = ORDER.findIndex(k => colStr(a,...CAT_KEYS).toUpperCase().includes(k));
+    const bi = ORDER.findIndex(k => colStr(b,...CAT_KEYS).toUpperCase().includes(k));
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
 
-      <div class="cat-section-head arrears">IN ARREARS — Watch 1+ (2,321 loans)</div>
-      <div class="cat-row" style="font-size:10px;color:var(--grey);font-weight:700;margin-bottom:4px">
-        <div>Category</div><div>Balance share</div><div>Arrears Amt</div><div>Balance</div><div>PAR%</div>
-      </div>
+  const totalBal = sum(clean, ...BAL_KEYS);
+  const totalArr = sum(clean, ...ARR_KEYS);
+  const totalCnt = Math.round(sum(clean, ...CNT_KEYS));
 
-      <div class="cat-row">
-        <div><span class="pill pill-watch1">Watch 1</span></div>
-        <div class="cat-bar-wrap"><div class="cat-bar" style="width:6.49%;background:#D97706"></div></div>
-        <div class="cat-amt">5.1M</div>
-        <div class="cat-bal">101.0M</div>
-        <div class="cat-par" style="color:#D97706">5.06%</div>
-      </div>
-      <div class="cat-row">
-        <div><span class="pill pill-watch2">Watch 2</span></div>
-        <div class="cat-bar-wrap"><div class="cat-bar" style="width:1.78%;background:#EA580C"></div></div>
-        <div class="cat-amt">0.6M</div>
-        <div class="cat-bal">27.7M</div>
-        <div class="cat-par" style="color:#EA580C">2.20%</div>
-      </div>
-      <div class="cat-row">
-        <div><span class="pill pill-substandard">Substandard</span></div>
-        <div class="cat-bar-wrap"><div class="cat-bar" style="width:0.57%;background:#DC2626"></div></div>
-        <div class="cat-amt">0.8M</div>
-        <div class="cat-bal">8.8M</div>
-        <div class="cat-par" style="color:#DC2626">8.90%</div>
-      </div>
-      <div class="cat-row">
-        <div><span class="pill pill-doubtful">Doubtful</span></div>
-        <div class="cat-bar-wrap"><div class="cat-bar" style="width:1.26%;background:#7C3AED"></div></div>
-        <div class="cat-amt">2.5M</div>
-        <div class="cat-bal">19.6M</div>
-        <div class="cat-par" style="color:#7C3AED">12.68%</div>
-      </div>
-      <div class="cat-row">
-        <div><span class="pill pill-loss">Loss</span></div>
-        <div class="cat-bar-wrap"><div class="cat-bar" style="width:89.88%;background:#111827"></div></div>
-        <div class="cat-amt">2,493M</div>
-        <div class="cat-bal">1,398M</div>
-        <div class="cat-par" style="color:#111827">178.31%</div>
-      </div>
+  const rowsHtml = clean.map(r => {
+    const cat  = colStr(r, ...CAT_KEYS);
+    const cnt  = parseInt(col(r, ...CNT_KEYS)) || 0;
+    const bal  = parseFloat(col(r, ...BAL_KEYS)) || 0;
+    const amt  = parseFloat(col(r, ...ARR_KEYS)) || 0;
+    const pct  = totalBal > 0 ? (bal / totalBal * 100) : 0;
+    const s    = catStyle(cat);
+    return `<tr>
+      <td><span class="pill ${s.cls}">${cat}</span></td>
+      <td class="num">${fmtN(cnt)}</td>
+      <td class="num">${fmtRaw(bal)}</td>
+      <td class="num">${fmtRaw(amt)}</td>
+      <td class="num" style="color:${s.color};font-weight:800">${pct.toFixed(2)}%</td>
+    </tr>`;
+  }).join('');
 
-      <div style="border-top:1px solid var(--border);margin:10px 0 10px"></div>
-
-      <div class="cat-section-head performing">PERFORMING — Not in Arrears (9,201 loans)</div>
-      <div class="cat-row">
-        <div><span class="pill pill-performing">Performing</span></div>
-        <div class="cat-bar-wrap"><div class="cat-bar" style="width:100%;background:#15803D"></div></div>
-        <div class="cat-amt" style="color:#15803D">1.3M</div>
-        <div class="cat-bal" style="color:#15803D">3,407M</div>
-        <div class="cat-par" style="color:#15803D">0.04%</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="section-title"><span class="dot"></span>PAR Aging Summary</div>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Category</th>
-              <th class="num">Loans</th>
-              <th class="num">Outstanding (KES)</th>
-              <th class="num">Arrears (KES)</th>
-              <th class="num">% of Portfolio</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="pill pill-loss">Loss</span></td>
-              <td class="num">2,027</td>
-              <td class="num">1,398,180,402</td>
-              <td class="num">2,493,028,890</td>
-              <td class="num" style="color:#111827;font-weight:800">28.17%</td>
-            </tr>
-            <tr>
-              <td><span class="pill pill-doubtful">Doubtful</span></td>
-              <td class="num">53</td>
-              <td class="num">19,647,580</td>
-              <td class="num">2,491,826</td>
-              <td class="num" style="color:#7C3AED;font-weight:700">0.40%</td>
-            </tr>
-            <tr>
-              <td><span class="pill pill-substandard">Substandard</span></td>
-              <td class="num">28</td>
-              <td class="num">8,811,578</td>
-              <td class="num">784,286</td>
-              <td class="num" style="color:#DC2626;font-weight:700">0.18%</td>
-            </tr>
-            <tr>
-              <td><span class="pill pill-watch2">Watch 2</span></td>
-              <td class="num">59</td>
-              <td class="num">27,669,224</td>
-              <td class="num">609,593</td>
-              <td class="num" style="color:#EA580C;font-weight:700">0.56%</td>
-            </tr>
-            <tr>
-              <td><span class="pill pill-watch1">Watch 1</span></td>
-              <td class="num">154</td>
-              <td class="num">100,960,589</td>
-              <td class="num">5,106,098</td>
-              <td class="num" style="color:#D97706;font-weight:700">2.03%</td>
-            </tr>
-            <tr>
-              <td><span class="pill pill-performing">Performing</span></td>
-              <td class="num">9,201</td>
-              <td class="num">3,406,606,925</td>
-              <td class="num">1,301,747</td>
-              <td class="num" style="color:#15803D;font-weight:700">68.66%</td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr>
-              <td><strong>TOTAL</strong></td>
-              <td class="num">11,522</td>
-              <td class="num">4,961,876,298</td>
-              <td class="num">2,503,322,439</td>
-              <td class="num">100%</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      <div style="margin-top:14px;padding:12px;background:#FEF2F2;border-radius:8px;border-left:3px solid var(--red)">
+  const lossRow = clean.find(r => colStr(r,...CAT_KEYS).toUpperCase().includes('LOSS'));
+  const lossAlert = lossRow ? (() => {
+    const lBal = parseFloat(col(lossRow,...BAL_KEYS))||0;
+    const lAmt = parseFloat(col(lossRow,...ARR_KEYS))||0;
+    const lCnt = parseInt(col(lossRow,...CNT_KEYS))||0;
+    if (lAmt > lBal && lAmt > 0) {
+      return `<div style="margin-top:14px;padding:12px;background:#FEF2F2;border-radius:8px;border-left:3px solid var(--red)">
         <div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:3px">Loss Category Alert</div>
-        <div style="font-size:12px;color:#374151">2,027 loans in Loss — arrears amount of KES 2.49B exceeds outstanding balance of KES 1.40B (PAR 178%). Immediate legal/recovery escalation required.</div>
-      </div>
-    </div>
-  </div>
+        <div style="font-size:12px;color:#374151">${fmtN(lCnt)} Loss loans — arrears (${fmt(lAmt)}) exceed outstanding balance (${fmt(lBal)}). PAR ${fmtPct(lBal>0?lAmt/lBal*100:0)}. Immediate legal/recovery escalation required.</div>
+      </div>`;
+    }
+    return '';
+  })() : '';
 
-  <div class="card" style="margin-bottom:28px">
-    <div class="section-title"><span class="dot"></span>Branch Arrears — Portfolio in Arrears by Branch (Sorted by PAR%)</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Branch</th>
-            <th class="num">Loans</th>
-            <th class="num">Total Balance (KES)</th>
-            <th class="num">Arrears (KES)</th>
-            <th style="width:150px">PAR %</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="branch-name">TRADECENTER</td>
-            <td class="num">638</td>
-            <td class="num">617,446,189</td>
-            <td class="num">619,974,217</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:100%;background:#111827"></div></div><span class="par-pct" style="color:#111827">100.41%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">HQ</td>
-            <td class="num">66</td>
-            <td class="num">8,686,571</td>
-            <td class="num">6,986,066</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:80%;background:#DC2626"></div></div><span class="par-pct" style="color:#DC2626">80.42%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">ECOBANK</td>
-            <td class="num">1,147</td>
-            <td class="num">973,096,107</td>
-            <td class="num">676,876,923</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:69%;background:#DC2626"></div></div><span class="par-pct" style="color:#DC2626">69.56%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">MOMBASA</td>
-            <td class="num">902</td>
-            <td class="num">269,803,515</td>
-            <td class="num">159,953,611</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:59%;background:#DC2626"></div></div><span class="par-pct" style="color:#DC2626">59.29%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">PENSION</td>
-            <td class="num">1,278</td>
-            <td class="num">756,994,808</td>
-            <td class="num">447,795,467</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:59%;background:#DC2626"></div></div><span class="par-pct" style="color:#DC2626">59.15%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">ELDORET</td>
-            <td class="num">793</td>
-            <td class="num">286,883,110</td>
-            <td class="num">167,674,652</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:58%;background:#D97706"></div></div><span class="par-pct" style="color:#D97706">58.45%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">KITENGELA</td>
-            <td class="num">815</td>
-            <td class="num">291,450,252</td>
-            <td class="num">163,214,254</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:56%;background:#D97706"></div></div><span class="par-pct" style="color:#D97706">56.00%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">THIKA</td>
-            <td class="num">839</td>
-            <td class="num">328,714,699</td>
-            <td class="num">72,768,129</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:22%;background:#D97706"></div></div><span class="par-pct" style="color:#D97706">22.14%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">KISUMU</td>
-            <td class="num">2,168</td>
-            <td class="num">569,632,173</td>
-            <td class="num">124,822,097</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:22%;background:#D97706"></div></div><span class="par-pct" style="color:#D97706">21.91%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">NAKURU</td>
-            <td class="num">488</td>
-            <td class="num">161,289,171</td>
-            <td class="num">23,052,990</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:14%;background:#15803D"></div></div><span class="par-pct" style="color:#15803D">14.29%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">HOMABAY</td>
-            <td class="num">562</td>
-            <td class="num">143,099,492</td>
-            <td class="num">19,200,314</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:13%;background:#15803D"></div></div><span class="par-pct" style="color:#15803D">13.42%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">LONRHOHSE</td>
-            <td class="num">41</td>
-            <td class="num">33,603,924</td>
-            <td class="num">3,232,641</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:10%;background:#15803D"></div></div><span class="par-pct" style="color:#15803D">9.62%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">VOI</td>
-            <td class="num">278</td>
-            <td class="num">84,440,959</td>
-            <td class="num">7,444,112</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:9%;background:#15803D"></div></div><span class="par-pct" style="color:#15803D">8.82%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">MACHAKOS</td>
-            <td class="num">551</td>
-            <td class="num">167,528,892</td>
-            <td class="num">4,729,606</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:3%;background:#15803D"></div></div><span class="par-pct" style="color:#15803D">2.82%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">KITUI</td>
-            <td class="num">754</td>
-            <td class="num">214,119,937</td>
-            <td class="num">5,364,744</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:3%;background:#15803D"></div></div><span class="par-pct" style="color:#15803D">2.51%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">KISII</td>
-            <td class="num">200</td>
-            <td class="num">54,183,042</td>
-            <td class="num">232,616</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:1%;background:#15803D"></div></div><span class="par-pct" style="color:#15803D">0.43%</span></td>
-          </tr>
-          <tr>
-            <td class="branch-name">CALLCENTER</td>
-            <td class="num">2</td>
-            <td class="num">903,457</td>
-            <td class="num">0</td>
-            <td><div class="par-bar-wrap"><div class="par-bar" style="width:0%;background:#15803D"></div></div><span class="par-pct" style="color:#15803D">0.00%</span></td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr>
-            <td><strong>TOTAL (17 Branches)</strong></td>
-            <td class="num">11,522</td>
-            <td class="num">4,961,876,298</td>
-            <td class="num">2,503,322,439</td>
-            <td style="color:rgba(255,255,255,.85);font-weight:700;padding:9px 10px">50.45% overall</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  </div>
+  document.getElementById('parTable').innerHTML = `
+    <div class="section-title"><span class="dot"></span>PAR Aging Summary</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+        <th>Category</th><th class="num">Loans</th>
+        <th class="num">Outstanding (KES)</th><th class="num">Arrears (KES)</th>
+        <th class="num">% of Portfolio</th>
+      </tr></thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot><tr>
+        <td><strong>TOTAL</strong></td>
+        <td class="num">${fmtN(totalCnt)}</td>
+        <td class="num">${fmtRaw(totalBal)}</td>
+        <td class="num">${fmtRaw(totalArr)}</td>
+        <td class="num">100%</td>
+      </tr></tfoot>
+    </table></div>
+    ${lossAlert}`;
+}
 
-  <div class="section-title"><span class="dot"></span>Portfolio Insights</div>
-  <div class="insight-grid">
-    <div class="insight critical">
-      <div class="insight-head">TRADECENTER — Immediate Action Required</div>
-      <div class="insight-body">
-        <span class="insight-num" style="color:var(--red)">100.41% PAR</span>
-        Arrears (KES 620M) exceed outstanding balance (KES 617M). Emergency collection intervention and senior RM escalation required immediately.
-      </div>
-    </div>
-    <div class="insight critical">
-      <div class="insight-head">Loss Category — Recovery Escalation</div>
-      <div class="insight-body">
-        <span class="insight-num" style="color:#111827">KES 2.49B Arrears</span>
-        2,027 loans in Loss with arrears 178% of outstanding. Legal recovery and board-level write-off review must be prioritised without delay.
-      </div>
-    </div>
-    <div class="insight critical">
-      <div class="insight-head">ECOBANK — High-Volume Arrears</div>
-      <div class="insight-body">
-        <span class="insight-num" style="color:var(--red)">KES 676.9M</span>
-        Largest arrears quantum: 1,147 loans at 69.56% PAR. Immediate debt recovery campaign and loan restructuring review required.
-      </div>
-    </div>
-    <div class="insight warn">
-      <div class="insight-head">PENSION — Payroll Deduction Failure?</div>
-      <div class="insight-body">
-        <span class="insight-num" style="color:var(--amber)">59.15% PAR</span>
-        KES 447.8M in arrears across 1,278 loans. Checkoff deductions may be failing — verify payroll linkage with all employer bodies.
-      </div>
-    </div>
-    <div class="insight warn">
-      <div class="insight-head">ELDORET · KITENGELA · MOMBASA</div>
-      <div class="insight-body">
-        <span class="insight-num" style="color:var(--amber)">56–59% PAR</span>
-        Three branches above 50% PAR representing KES 490.8M combined arrears. Joint collection drive and branch manager accountability review recommended.
-      </div>
-    </div>
-    <div class="insight good">
-      <div class="insight-head">Best Performers — Replicate Model</div>
-      <div class="insight-body">
-        <span class="insight-num" style="color:#15803D">KISII 0.43%</span>
-        KISII (0.43%), KITUI (2.51%), and MACHAKOS (2.82%) maintain excellent portfolio quality. Credit and collections best practices from these branches should be documented and replicated network-wide.
-      </div>
-    </div>
-  </div>
+// ── Branch Table ──────────────────────────────────────────────────────────────
+function renderBranchTable(rows, selectedBranch) {
+  const clean = rows.filter(r => {
+    const b = colStr(r,...BRNCH_KEYS).toUpperCase();
+    return b !== 'TOTAL' && b !== '';
+  });
 
-  <div class="card" style="margin-bottom:28px">
-    <div class="section-title"><span class="dot"></span>Notable Loan Products by Risk</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Product Type</th>
-            <th class="num">Loans</th>
-            <th class="num">Balance (KES)</th>
-            <th class="num">Arrears (KES)</th>
-            <th class="num">PAR %</th>
-            <th>Risk Level</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>LOG BOOK LOAN</td>
-            <td class="num">9</td>
-            <td class="num">3,192,351</td>
-            <td class="num">8,604,544</td>
-            <td class="num" style="color:#111827;font-weight:800">269.54%</td>
-            <td><span class="pill pill-loss">Critical</span></td>
-          </tr>
-          <tr>
-            <td>Boda Boda Financing</td>
-            <td class="num">62</td>
-            <td class="num">6,264,849</td>
-            <td class="num">14,424,903</td>
-            <td class="num" style="color:#111827;font-weight:800">230.25%</td>
-            <td><span class="pill pill-loss">Critical</span></td>
-          </tr>
-          <tr>
-            <td>Insurance Premium Finance</td>
-            <td class="num">95</td>
-            <td class="num">6,899,158</td>
-            <td class="num">2,435,973</td>
-            <td class="num" style="color:#DC2626;font-weight:700">35.31%</td>
-            <td><span class="pill pill-substandard">High</span></td>
-          </tr>
-          <tr>
-            <td>Checkoff</td>
-            <td class="num">9,105</td>
-            <td class="num">2,670,201,260</td>
-            <td class="num">193,782,495</td>
-            <td class="num" style="color:#D97706;font-weight:700">7.26%</td>
-            <td><span class="pill pill-watch1">Moderate</span></td>
-          </tr>
-          <tr>
-            <td>Asset Finance</td>
-            <td class="num">21</td>
-            <td class="num">27,348,422</td>
-            <td class="num">711,161</td>
-            <td class="num" style="color:#15803D;font-weight:700">2.60%</td>
-            <td><span class="pill pill-performing">Low</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div style="margin-top:10px;font-size:11px;color:var(--grey)">* Boda Boda and Log Book arrears exceed outstanding balance — collateral recovery (vehicle seizure) should be initiated. Full 31-product breakdown available in source Excel.</div>
-  </div>
+  // Sort by PAR desc
+  clean.sort((a, b) => {
+    const parA = parseFloat(col(a,...PAR_KEYS)) || (parseFloat(col(a,...BAL_KEYS))>0 ? parseFloat(col(a,...ARR_KEYS))/parseFloat(col(a,...BAL_KEYS))*100 : 0);
+    const parB = parseFloat(col(b,...PAR_KEYS)) || (parseFloat(col(b,...BAL_KEYS))>0 ? parseFloat(col(b,...ARR_KEYS))/parseFloat(col(b,...BAL_KEYS))*100 : 0);
+    return parB - parA;
+  });
 
-</div>
+  const totalBal = sum(clean,...BAL_KEYS);
+  const totalArr = sum(clean,...ARR_KEYS);
+  const totalCnt = Math.round(sum(clean,...CNT_KEYS));
 
-<div class="footer">
-  <strong>Mwananchi Credit Ltd</strong> &nbsp;|&nbsp; Portfolio at Risk Report &nbsp;|&nbsp; As at 18 June 2026 &nbsp;|&nbsp; All Branches &nbsp;|&nbsp; Source: SQL Server (mwananchidy365) &nbsp;|&nbsp; Arrears = sp_PortfolioByLoanCategory Watch 1+ &nbsp;|&nbsp; Branches = sp_PortfolioInArrearsByBranch
-</div>
+  const rowsHtml = clean.map(r => {
+    const name = colStr(r,...BRNCH_KEYS);
+    const cnt  = parseInt(col(r,...CNT_KEYS))||0;
+    const bal  = parseFloat(col(r,...BAL_KEYS))||0;
+    const amt  = parseFloat(col(r,...ARR_KEYS))||0;
+    const par  = parseFloat(col(r,...PAR_KEYS)) || (bal>0 ? amt/bal*100 : 0);
+    const c    = parColor(par);
+    return `<tr>
+      <td class="branch-name">${name}</td>
+      <td class="num">${fmtN(cnt)}</td>
+      <td class="num">${fmtRaw(bal)}</td>
+      <td class="num">${fmtRaw(amt)}</td>
+      <td>
+        <div class="par-bar-wrap"><div class="par-bar" style="width:${parWidth(par)};background:${c}"></div></div>
+        <span class="par-pct" style="color:${c}">${fmtPct(par)}</span>
+      </td>
+    </tr>`;
+  }).join('');
 
+  const overallPar = totalBal>0 ? (totalArr/totalBal*100).toFixed(2) : 0;
+  const title = selectedBranch === 'ALL'
+    ? `Branch Arrears — Portfolio in Arrears by Branch (${clean.length} branches, sorted by PAR%)`
+    : `Branch Arrears — ${selectedBranch}`;
+
+  document.getElementById('branchCard').innerHTML = `
+    <div class="section-title"><span class="dot"></span>${title}</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+        <th>Branch</th><th class="num">Loans</th>
+        <th class="num">Total Balance (KES)</th><th class="num">Arrears (KES)</th>
+        <th style="width:150px">PAR %</th>
+      </tr></thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot><tr>
+        <td><strong>TOTAL (${clean.length} branches)</strong></td>
+        <td class="num">${fmtN(totalCnt)}</td>
+        <td class="num">${fmtRaw(totalBal)}</td>
+        <td class="num">${fmtRaw(totalArr)}</td>
+        <td style="color:rgba(255,255,255,.85);font-weight:700;padding:9px 10px">${overallPar}% overall</td>
+      </tr></tfoot>
+    </table></div>`;
+}
+
+// ── Insights ──────────────────────────────────────────────────────────────────
+function renderInsights(kpis, catRows, branchRows, branch) {
+  const cleanB = branchRows.filter(r => {
+    const b = colStr(r,...BRNCH_KEYS).toUpperCase(); return b!=='TOTAL'&&b!=='';
+  });
+  const sorted = [...cleanB].sort((a,b) => {
+    const pa = parseFloat(col(a,...PAR_KEYS))||0, pb = parseFloat(col(b,...PAR_KEYS))||0;
+    return pb - pa;
+  });
+  const top    = sorted.slice(0,1)[0];
+  const best   = sorted.slice(-3).reverse();
+  const worst3 = sorted.slice(1,4);
+  const lossRow= catRows.find(r=>colStr(r,...CAT_KEYS).toUpperCase().includes('LOSS'));
+
+  const topInsight = top ? (() => {
+    const par = parseFloat(col(top,...PAR_KEYS))||0;
+    const amt = parseFloat(col(top,...ARR_KEYS))||0;
+    const bal = parseFloat(col(top,...BAL_KEYS))||0;
+    return `<div class="insight critical">
+      <div class="insight-head">${colStr(top,...BRNCH_KEYS)} — Immediate Action</div>
+      <div class="insight-body"><span class="insight-num" style="color:var(--red)">${fmtPct(par)} PAR</span>
+      Arrears ${fmt(amt)} against outstanding ${fmt(bal)}. Emergency collection & senior RM escalation required.</div>
+    </div>`;
+  })() : '';
+
+  const lossInsight = lossRow ? (() => {
+    const lAmt = parseFloat(col(lossRow,...ARR_KEYS))||0;
+    const lBal = parseFloat(col(lossRow,...BAL_KEYS))||0;
+    const lCnt = parseInt(col(lossRow,...CNT_KEYS))||0;
+    const lPar = lBal>0 ? lAmt/lBal*100 : 0;
+    return `<div class="insight critical">
+      <div class="insight-head">Loss Category — Recovery Required</div>
+      <div class="insight-body"><span class="insight-num" style="color:#111827">${fmt(lAmt)} Arrears</span>
+      ${fmtN(lCnt)} loans at ${fmtPct(lPar)} PAR — arrears exceed outstanding. Legal recovery & write-off review urgently needed.</div>
+    </div>`;
+  })() : '';
+
+  const w3html = worst3.length ? `<div class="insight warn">
+    <div class="insight-head">${worst3.map(r=>colStr(r,...BRNCH_KEYS)).join(' · ')}</div>
+    <div class="insight-body"><span class="insight-num" style="color:var(--amber)">${worst3.map(r=>fmtPct(parseFloat(col(r,...PAR_KEYS))||0)).join(' / ')} PAR</span>
+    Combined arrears of ${fmt(worst3.reduce((s,r)=>s+(parseFloat(col(r,...ARR_KEYS))||0),0))}. Joint collection drive recommended.</div>
+  </div>` : '';
+
+  const bestHtml = best.length ? `<div class="insight good">
+    <div class="insight-head">Best Performers — Replicate Model</div>
+    <div class="insight-body"><span class="insight-num" style="color:#15803D">${colStr(best[0],...BRNCH_KEYS)} ${fmtPct(parseFloat(col(best[0],...PAR_KEYS))||0)}</span>
+    ${best.map(r=>colStr(r,...BRNCH_KEYS)+' ('+fmtPct(parseFloat(col(r,...PAR_KEYS))||0)+')').join(', ')} maintain excellent quality. Document and replicate best practices network-wide.</div>
+  </div>` : '';
+
+  const parInsight = `<div class="insight ${kpis.par > 30 ? 'critical' : kpis.par > 15 ? 'warn' : 'good'}">
+    <div class="insight-head">Overall Portfolio PAR</div>
+    <div class="insight-body"><span class="insight-num" style="color:${kpis.par>30?'var(--red)':kpis.par>15?'var(--amber)':'var(--green)'}">${fmtPct(kpis.par)}</span>
+    ${fmtN(kpis.loansInArrears)} loans in arrears (Watch 1+). Arrears balance ${fmt(kpis.arrearsBal)} of total portfolio ${fmt(kpis.totalBal)}.</div>
+  </div>`;
+
+  document.getElementById('insightGrid').innerHTML =
+    topInsight + lossInsight + parInsight + w3html + bestHtml;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('filterDate').value = today;
+  await loadBranches();
+  runReport();
+
+  document.getElementById('filterBranch').addEventListener('change', () => runReport());
+  document.getElementById('filterDate').addEventListener('change', async () => {
+    await loadBranches();
+    runReport();
+  });
+});
+</script>
 </body>
 </html>
