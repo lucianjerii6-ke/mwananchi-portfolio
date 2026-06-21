@@ -395,7 +395,7 @@ html, body { font-family:'Figtree',sans-serif; background:var(--off); color:#1a1
 //  Works when opened via http://localhost:5050/dashboard
 //  Change to a full URL only if hosting the HTML separately.
 // ═══════════════════════════════════════════════════════
-const API_BASE = '';
+const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:5050' : '';
 
 // ── colours ──────────────────────────────────────────
 const CAT_COLORS = {

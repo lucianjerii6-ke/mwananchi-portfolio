@@ -194,7 +194,8 @@ tfoot td.num{text-align:right}
 </div>
 
 <script>
-const API_BASE = '';
+// Use relative paths when served via Flask; fall back to localhost when opened as a file
+const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:5050' : '';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(n) {
