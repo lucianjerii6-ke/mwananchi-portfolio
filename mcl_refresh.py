@@ -166,7 +166,7 @@ def write_total_row(ws, row, values):
 
 
 # ── Sheet 1: Summary ──────────────────────────────────────────
-def build_summary_sheet(wb, as_at_date):
+def build_summary_sheet(wb, as_at_date, branch="ALL"):
     ws = wb.active
     ws.title = "Summary"
 
@@ -181,7 +181,8 @@ def build_summary_sheet(wb, as_at_date):
 
     ws.merge_cells("A2:F2")
     c = ws["A2"]
-    c.value = f"As at Date: {as_at_date}    |    Database: {SQL_DATABASE}    |    Generated: {datetime.now().strftime('%d %b %Y %H:%M')}"
+    branch_tag = f"    |    Branch: {branch}" if branch and branch.upper() != "ALL" else "    |    All Branches"
+    c.value = f"As at Date: {as_at_date}{branch_tag}    |    Database: {SQL_DATABASE}    |    Generated: {datetime.now().strftime('%d %b %Y %H:%M')}"
     c.fill  = PatternFill("solid", fgColor=ORANGE)
     c.font  = Font(name="Calibri", bold=True, color=WHITE, size=10)
     c.alignment = Alignment(horizontal="left", vertical="center")
@@ -290,7 +291,8 @@ def build_summary_sheet(wb, as_at_date):
 
 # ── Generic raw-data sheet builder ────────────────────────────
 def build_sp_sheet(wb, sheet_name, sp_name, as_at_date, title, subtitle,
-                   col_formats=None, par_col=None, filter_total_col=None):
+                   col_formats=None, par_col=None, filter_total_col=None,
+                   branch_filter=None):
     """
     col_formats: dict {col_index: 'kes'|'pct'|'int'|'text'}
     par_col: 1-based column index to apply PAR colour fill
@@ -332,6 +334,16 @@ def build_sp_sheet(wb, sheet_name, sp_name, as_at_date, title, subtitle,
     # Filter TOTAL rows if requested
     if filter_total_col:
         rows = [r for r in rows if str(r.get(filter_total_col, "")).upper() != "TOTAL"]
+
+    # Apply branch filter (post-fetch) — only if column exists in result
+    if branch_filter:
+        branch_val, branch_col = branch_filter
+        if branch_val and branch_val.upper() != "ALL" and rows and branch_col in rows[0]:
+            rows = [r for r in rows if str(r.get(branch_col, "")).strip().upper() == branch_val.upper()]
+            if not rows:
+                ws.cell(row=4, column=1,
+                    value=f"No data found for branch '{branch_val}' in {sp_name}.")
+                return ws
 
     # Headers
     headers = list(rows[0].keys())
@@ -421,108 +433,228 @@ def build_sp_sheet(wb, sheet_name, sp_name, as_at_date, title, subtitle,
     return ws
 
 
+# ── Loan Category sheet (Performing separated from arrears) ───
+def build_category_sheet(wb, as_at_date, branch="ALL"):
+    """
+    Loan Category sheet with two sections:
+      - ARREARS CATEGORIES  (Watch 1, Watch 2, Substandard, Doubtful, Loss)
+      - PERFORMING — CURRENT (not in arrears, shown separately at bottom)
+    """
+    ws = wb.create_sheet("Loan Category")
+    ws.sheet_view.showGridLines = False
+
+    # Banner
+    ws.merge_cells("A1:Z1")
+    c = ws.cell(row=1, column=1, value="MWANANCHI CREDIT LTD — PORTFOLIO BY LOAN CATEGORY")
+    c.fill = navy_fill(); c.font = Font(name="Calibri", bold=True, color=WHITE, size=13)
+    c.alignment = Alignment(horizontal="left", vertical="center"); ws.row_dimensions[1].height = 28
+
+    ws.merge_cells("A2:Z2")
+    c = ws.cell(row=2, column=1,
+        value=f"Credit classification breakdown  |  sp_PortfolioByLoanCategory  |  As at: {as_at_date}  |  {datetime.now().strftime('%d %b %Y %H:%M')}")
+    c.fill = orange_fill(); c.font = Font(name="Calibri", color=WHITE, size=9)
+    c.alignment = Alignment(horizontal="left", vertical="center"); ws.row_dimensions[2].height = 14
+
+    # Fetch
+    try:
+        all_rows = run_sp("sp_PortfolioByLoanCategory", as_at_date=as_at_date)
+    except Exception as e:
+        ws.cell(row=4, column=1, value=f"ERROR: {e}").font = Font(color=RED, bold=True, size=11)
+        return ws
+
+    if not all_rows:
+        ws.cell(row=4, column=1, value="No data returned for this date.")
+        return ws
+
+    # Remove TOTAL rows
+    all_rows = [r for r in all_rows if str(r.get("LoanCategory","")).upper() != "TOTAL"]
+
+    # Apply branch filter if column exists
+    if branch and branch.upper() != "ALL" and all_rows and "BranchName" in all_rows[0]:
+        all_rows = [r for r in all_rows if str(r.get("BranchName","")).strip().upper() == branch.upper()]
+    performing = [r for r in all_rows if str(r.get("LoanCategory","")).strip().upper() == "PERFORMING"]
+    arrears_rows = [r for r in all_rows if str(r.get("LoanCategory","")).strip().upper() != "PERFORMING"]
+
+    headers = list(all_rows[0].keys())
+    col_formats = {}
+    par_col = None
+    for j, h in enumerate(headers):
+        hl = h.lower()
+        if j == 0: col_formats[j+1] = "text"
+        elif "count" in hl or "loans" in hl: col_formats[j+1] = "int"
+        elif "percentage" in hl or "par" in hl or "rate" in hl:
+            col_formats[j+1] = "pct"; par_col = j+1
+        elif "amount" in hl or "balance" in hl or "arrears" in hl:
+            col_formats[j+1] = "kes"
+
+    def write_section(ws, start_row, rows, section_label, label_color):
+        # Section label
+        ws.merge_cells(start_row=start_row, start_column=1, end_row=start_row, end_column=len(headers))
+        c = ws.cell(row=start_row, column=1, value=section_label)
+        c.fill = PatternFill("solid", fgColor=label_color)
+        c.font = Font(name="Calibri", bold=True, color=WHITE, size=10)
+        c.alignment = Alignment(horizontal="left", vertical="center")
+        ws.row_dimensions[start_row].height = 16
+        start_row += 1
+
+        # Header row
+        write_header_row(ws, start_row, headers)
+        start_row += 1
+
+        # Data rows
+        for i, row in enumerate(rows):
+            values = []
+            for h in headers:
+                v = row.get(h)
+                if isinstance(v, (datetime, date)): v = v.strftime("%Y-%m-%d")
+                values.append(v)
+            is_alt = (i % 2 == 1)
+            fill = alt_fill() if is_alt else PatternFill("solid", fgColor=WHITE)
+            for j, (h, v) in enumerate(zip(headers, values)):
+                c = ws.cell(row=start_row, column=j+1, value=v)
+                c.font = body_font(10); c.border = thin_border()
+                fmt = col_formats.get(j+1, "")
+                if par_col and (j+1) == par_col and v is not None:
+                    pf = par_fill(v)
+                    c.fill = pf if pf else fill
+                    c.font = Font(name="Calibri", bold=True, size=10)
+                    try: c.value = float(v); c.number_format = '0.00'
+                    except: pass
+                    c.alignment = Alignment(horizontal="right")
+                else:
+                    c.fill = fill
+                    if fmt == "kes" and v is not None:
+                        try: c.value = float(v); c.number_format = '#,##0.00'; c.alignment = Alignment(horizontal="right")
+                        except: pass
+                    elif fmt == "int" and v is not None:
+                        try: c.value = int(v); c.number_format = '#,##0'; c.alignment = Alignment(horizontal="right")
+                        except: pass
+                    else:
+                        c.alignment = Alignment(horizontal="left" if isinstance(v, str) else "right")
+            ws.row_dimensions[start_row].height = 15
+            start_row += 1
+
+        # Totals row
+        tot = ["TOTAL"] + [""] * (len(headers)-1)
+        for j, h in enumerate(headers[1:], 1):
+            try: tot[j] = sum(float(r.get(h, 0) or 0) for r in rows if r.get(h) is not None)
+            except: pass
+        write_total_row(ws, start_row, tot)
+        return start_row + 2   # blank row gap
+
+    next_row = 4
+    # Section 1: Arrears categories
+    next_row = write_section(ws, next_row, arrears_rows,
+        "ARREARS CATEGORIES  —  Watch 1 / Watch 2 / Substandard / Doubtful / Loss", RED)
+
+    # Section 2: Performing (current, not in arrears)
+    next_row = write_section(ws, next_row, performing,
+        "PERFORMING — CURRENT LOANS (NOT IN ARREARS)", GREEN)
+
+    # Auto-width
+    for j, h in enumerate(headers):
+        max_len = max(len(str(h)), max((len(str(r.get(h,"") or "")) for r in all_rows), default=0))
+        ws.column_dimensions[get_column_letter(j+1)].width = min(max_len + 4, 32)
+
+    ws.freeze_panes = "A5"
+    return ws
+
+
+# ── Branch filter helper ──────────────────────────────────────
+def apply_branch_filter(rows, branch, col="BranchName"):
+    """Return only rows matching branch. Pass 'ALL' or None to keep all."""
+    if not branch or branch.strip().upper() == "ALL":
+        return rows
+    return [r for r in rows if str(r.get(col, "")).strip().upper() == branch.strip().upper()]
+
+
 # ── Main builder ──────────────────────────────────────────────
-def build_workbook(as_at_date):
+def build_workbook(as_at_date, branch="ALL"):
     wb = Workbook()
+    branch_label = branch.strip().upper() if branch else "ALL"
+    is_filtered  = branch_label != "ALL"
+
     print(f"\n  Mwananchi Credit — Excel Portfolio Refresh")
     print(f"  As at date : {as_at_date}")
+    print(f"  Branch     : {branch_label}")
     print(f"  Database   : {SQL_DATABASE} @ {SQL_SERVER}")
     print()
 
     # Sheet 1: Summary
-    print("  [1/7] Summary KPIs ...")
-    build_summary_sheet(wb, as_at_date)
+    print("  [1/8] Summary KPIs ...")
+    build_summary_sheet(wb, as_at_date, branch=branch_label)
     print("        Done")
 
-    # Sheet 2: Branch Arrears
-    print("  [2/7] sp_PortfolioInArrearsByBranch ...")
+    # Sheet 2: Branch Arrears — filter post-fetch
+    print("  [2/8] sp_PortfolioInArrearsByBranch ...")
     build_sp_sheet(
         wb,
         sheet_name="Branch Arrears",
         sp_name="sp_PortfolioInArrearsByBranch",
         as_at_date=as_at_date,
-        title="Portfolio in Arrears by Branch",
+        title=f"Portfolio in Arrears by Branch{' — '+branch_label if is_filtered else ''}",
         subtitle="Branch-level arrears, loan balance and PAR percentage",
         col_formats={3:"int", 4:"kes", 5:"kes", 6:"pct"},
         par_col=6,
         filter_total_col="BranchName",
+        branch_filter=(branch_label, "BranchName"),
     )
     print("        Done")
 
-    # Sheet 3: Loan Products
-    print("  [3/7] sp_PortfolioByLoanProduct ...")
+    # Sheet 3: Loan Products — filter post-fetch if SP returns BranchName
+    print("  [3/8] sp_PortfolioByLoanProduct ...")
     build_sp_sheet(
         wb,
         sheet_name="Loan Products",
         sp_name="sp_PortfolioByLoanProduct",
         as_at_date=as_at_date,
-        title="Portfolio by Loan Product",
+        title=f"Portfolio by Loan Product{' — '+branch_label if is_filtered else ''}",
         subtitle="Arrears and balance breakdown by loan product type",
         col_formats={2:"int", 3:"kes", 4:"kes", 5:"pct"},
         par_col=5,
         filter_total_col="LoanProductType",
+        branch_filter=(branch_label, "BranchName"),
     )
     print("        Done")
 
-    # Sheet 4: Loan Category
-    print("  [4/7] sp_PortfolioByLoanCategory ...")
-    build_sp_sheet(
-        wb,
-        sheet_name="Loan Category",
-        sp_name="sp_PortfolioByLoanCategory",
-        as_at_date=as_at_date,
-        title="Portfolio by Loan Category",
-        subtitle="Credit classification — Performing, Watch, Substandard, Doubtful, Loss",
-        col_formats={2:"int", 3:"kes", 4:"kes", 5:"pct"},
-        par_col=5,
-        filter_total_col="LoanCategory",
-    )
+    # Sheet 4: Loan Category (Performing separated — not in arrears)
+    print("  [4/8] sp_PortfolioByLoanCategory ...")
+    build_category_sheet(wb, as_at_date, branch=branch_label)
     print("        Done")
 
-    # Sheet 5: Active Loans
-    print("  [5/7] sp_ActiveLoanCount ...")
+    # Sheet 5: Active Loans (summary — no branch split)
+    print("  [5/8] sp_ActiveLoanCount ...")
     build_sp_sheet(
-        wb,
-        sheet_name="Active Loans",
-        sp_name="sp_ActiveLoanCount",
-        as_at_date=None,
-        title="Active Loan Count",
+        wb, sheet_name="Active Loans", sp_name="sp_ActiveLoanCount",
+        as_at_date=None, title="Active Loan Count",
         subtitle="Total number of active loans in the portfolio",
     )
     print("        Done")
 
     # Sheet 6: Total Loan Balance
-    print("  [6/7] sp_TotalLoanBalance ...")
+    print("  [6/8] sp_TotalLoanBalance ...")
     build_sp_sheet(
-        wb,
-        sheet_name="Total Balance",
-        sp_name="sp_TotalLoanBalance",
-        as_at_date=None,
-        title="Total Loan Balance",
+        wb, sheet_name="Total Balance", sp_name="sp_TotalLoanBalance",
+        as_at_date=None, title="Total Loan Balance",
         subtitle="Principal outstanding balance across all active loans",
         col_formats={1:"kes"},
     )
     print("        Done")
 
     # Sheet 7: Principal Balance
-    print("  [7/7] sp_LoanPrincipalBalance + sp_Portfoliainarrears ...")
+    print("  [7/8] sp_LoanPrincipalBalance ...")
     build_sp_sheet(
-        wb,
-        sheet_name="Principal Balance",
-        sp_name="sp_LoanPrincipalBalance",
-        as_at_date=None,
-        title="Loan Principal Balance",
-        subtitle="Principal outstanding balance",
-        col_formats={1:"kes"},
+        wb, sheet_name="Principal Balance", sp_name="sp_LoanPrincipalBalance",
+        as_at_date=None, title="Loan Principal Balance",
+        subtitle="Principal outstanding balance", col_formats={1:"kes"},
     )
+    print("        Done")
 
-    # Sheet 8: Portfolio Arrears summary
+    # Sheet 8: Portfolio Arrears
+    print("  [8/8] sp_Portfoliainarrears ...")
     build_sp_sheet(
-        wb,
-        sheet_name="Portfolio Arrears",
-        sp_name="sp_Portfoliainarrears",
-        as_at_date=None,
-        title="Portfolio in Arrears — Overall",
+        wb, sheet_name="Portfolio Arrears", sp_name="sp_Portfoliainarrears",
+        as_at_date=None, title="Portfolio in Arrears — Overall",
         subtitle="Total arrears, loan count in arrears, PAR percentage",
         col_formats={1:"kes", 3:"pct"},
     )
@@ -532,14 +664,23 @@ def build_workbook(as_at_date):
 
 
 def main():
-    as_at_date = sys.argv[1] if len(sys.argv) > 1 else datetime.now().strftime("%Y-%m-%d")
-    out_path = os.path.join(
-        os.path.expanduser("~"),
-        "mwananchi-portfolio",
-        f"MCL_Portfolio_{as_at_date}.xlsx"
-    )
+    as_at_date   = sys.argv[1] if len(sys.argv) > 1 else datetime.now().strftime("%Y-%m-%d")
+    branch       = sys.argv[2] if len(sys.argv) > 2 else "ALL"
+    branch_label = branch.strip().upper()
+    # Optional 3rd arg: custom output filename (used by auto-refresh daemon)
+    # e.g.  python3 mcl_refresh.py 2026-06-20 ALL MCL_Portfolio_LIVE.xlsx
+    output_override = sys.argv[3] if len(sys.argv) > 3 else None
 
-    wb = build_workbook(as_at_date)
+    if output_override:
+        filename = output_override
+    elif branch_label == "ALL":
+        filename = f"MCL_Portfolio_{as_at_date}.xlsx"
+    else:
+        filename = f"MCL_Portfolio_{as_at_date}_{branch_label}.xlsx"
+
+    out_path = os.path.join(os.path.expanduser("~"), "mwananchi-portfolio", filename)
+
+    wb = build_workbook(as_at_date, branch=branch_label)
     wb.save(out_path)
     print(f"\n  Excel saved to:\n  {out_path}\n")
     return out_path

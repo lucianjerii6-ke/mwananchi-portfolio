@@ -1,0 +1,144 @@
+MWANANCHI CREDIT — EXCEL POWER QUERY LIVE REFRESH SETUP
+=========================================================
+
+These steps set up Excel so clicking "Refresh All" pulls fresh SP data
+directly from SQL Server without running any script.
+
+PREREQUISITES
+  - Microsoft Excel 365 (Windows) with Power Query enabled
+  - Network access to 173.249.59.109:1433
+  - SQL Server login: monday / [your password]
+
+NOTE: Power Query on Mac Excel has limited SQL Server support.
+      On Mac, use MCL_AutoRefresh_Install.command for automatic background
+      refresh instead (runs every 5 minutes, no Excel macro needed).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 1 — INITIAL SETUP (do once)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 1 — Connect to SQL Server
+  1. Open a blank Excel workbook
+  2. Data tab → Get Data → From Database → From SQL Server Database
+  3. Server:   173.249.59.109,1433
+  4. Database: mwananchidy365
+  5. Click OK → choose "Database" auth tab → enter:
+       Username: monday
+       Password: [your SQL password]
+  6. Click Connect
+
+
+STEP 2 — Create a query for each stored procedure
+  In the Navigator window that appears, click "Advanced Options"
+  and paste each query below. Name each query as shown.
+
+  ── Query: BranchArrears ──────────────────────────────────────
+  EXEC sp_PortfolioInArrearsByBranch @AsAtDate = CONVERT(date, GETDATE())
+
+  ── Query: LoanProducts ───────────────────────────────────────
+  EXEC sp_PortfolioByLoanProduct @AsAtDate = CONVERT(date, GETDATE())
+
+  ── Query: LoanCategory ───────────────────────────────────────
+  EXEC sp_PortfolioByLoanCategory @AsAtDate = CONVERT(date, GETDATE())
+
+  ── Query: ActiveLoans ────────────────────────────────────────
+  EXEC sp_ActiveLoanCount
+
+  ── Query: TotalBalance ───────────────────────────────────────
+  EXEC sp_TotalLoanBalance
+
+  ── Query: PrincipalBalance ───────────────────────────────────
+  EXEC sp_LoanPrincipalBalance
+
+  ── Query: PortfolioArrears ───────────────────────────────────
+  EXEC sp_Portfoliainarrears
+
+
+STEP 3 — Load each query to its own sheet
+  For each query: right-click → Load To → Table → New Sheet
+  Name the sheet to match the query name (BranchArrears, etc.)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 2 — AUTO-REFRESH EVERY 5 MINUTES (Windows)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Set each query to refresh automatically while the workbook is open:
+
+  1. In Excel, go to Data tab → Queries & Connections
+  2. Right-click each query → Properties
+  3. In the Usage tab:
+       [x] Refresh every:  5  minutes
+       [x] Refresh data when opening the file
+  4. Click OK
+  5. Repeat for all 7 queries
+
+  The workbook must remain open for background refresh to work.
+  Each query will re-run its SP every 5 minutes automatically.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 3 — DAILY SCHEDULED OPEN + REFRESH (Windows Task Scheduler)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Set Windows to automatically open the workbook every morning
+so the data is already fresh when you arrive:
+
+  1. Press Win + R → type  taskschd.msc  → Enter
+  2. Click "Create Basic Task" in the right panel
+  3. Name: MCL Portfolio Daily Refresh
+  4. Trigger: Daily → set time (e.g. 08:00 AM)
+  5. Action: Start a Program
+       Program:  excel.exe
+       Arguments: "C:\Users\YourName\mwananchi-portfolio\MCL_Portfolio_LIVE.xlsx"
+         (replace YourName with your Windows username)
+  6. Finish
+
+  This opens the workbook at 8am. Because "Refresh data when opening
+  the file" is enabled (Part 2, step 3), all SPs run immediately on open.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 4 — SAVE DAILY SNAPSHOT (optional VBA macro)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+To automatically save a dated copy at end of day:
+
+  1. Press Alt + F11 to open VBA editor
+  2. Insert → Module, paste this code:
+
+  Sub SaveDailySnapshot()
+      Dim snapPath As String
+      snapPath = "C:\Users\YourName\mwananchi-portfolio\MCL_Portfolio_" & _
+                 Format(Now, "YYYY-MM-DD") & ".xlsx"
+      ThisWorkbook.SaveCopyAs snapPath
+      MsgBox "Snapshot saved: " & snapPath, vbInformation
+  End Sub
+
+  3. Close VBA editor
+  4. To run: Alt + F8 → SaveDailySnapshot → Run
+  5. Save the workbook as .xlsm (macro-enabled) to keep the macro.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  "Cannot connect"
+    - Check VPN / network path to 173.249.59.109
+    - Ensure port 1433 is not blocked by firewall
+
+  "Login failed"
+    - Verify username = monday and correct password
+
+  "Stored procedure not found"
+    - SP name may differ — check with DBA
+
+  "Blank columns / no data"
+    - SP may not accept @AsAtDate — remove the parameter:
+      EXEC sp_PortfolioInArrearsByBranch
+
+  "Refresh does not run automatically"
+    - Confirm the workbook is open (background refresh requires open file)
+    - Re-check Queries & Connections → Properties → Refresh every 5 minutes
