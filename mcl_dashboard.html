@@ -283,8 +283,9 @@ html, body { font-family:'Figtree',sans-serif; background:var(--off); color:#1a1
     <div class="state-title">Portfolio Dashboard</div>
     <div class="state-body">
       Select a date and optional branch filter above, then click <strong>Run Report</strong> to pull live data from SQL Server.<br><br>
-      Make sure the Flask server is running:<br>
-      <code>bash ~/mwananchi-portfolio/MCL_Launch.command</code>
+      Make sure you opened this page via Flask, not as a file:<br>
+      <code>bash ~/mwananchi-portfolio/MCL_Start_Server.command</code><br>
+      then visit <code>http://localhost:5050</code>
     </div>
   </div>
 
@@ -390,10 +391,11 @@ html, body { font-family:'Figtree',sans-serif; background:var(--off); color:#1a1
 
 <script>
 // ═══════════════════════════════════════════════════════
-//  CONFIGURATION — change API_BASE to your server URL
-//  e.g. 'https://your-tunnel-url.trycloudflare.com'
+//  API_BASE: empty string = same server that served this page.
+//  Works when opened via http://localhost:5050/dashboard
+//  Change to a full URL only if hosting the HTML separately.
 // ═══════════════════════════════════════════════════════
-const API_BASE = 'http://localhost:5050';
+const API_BASE = '';
 
 // ── colours ──────────────────────────────────────────
 const CAT_COLORS = {
@@ -468,8 +470,9 @@ async function runReport() {
   } catch(e) {
     showState('error');
     setMsg('error',
-      `Could not connect to the Flask server at <code>${API_BASE}</code>.<br><br>` +
-      `Make sure the server is running:<br><code>bash ~/mwananchi-portfolio/MCL_Launch.command</code><br><br>` +
+      `Could not connect to the Flask server.<br><br>` +
+      `Make sure the server is running: <code>bash ~/mwananchi-portfolio/MCL_Start_Server.command</code><br>` +
+      `Then open <code>http://localhost:5050</code> — do NOT open the HTML file directly.<br><br>` +
       `Error: ${e.message}`
     );
   } finally {

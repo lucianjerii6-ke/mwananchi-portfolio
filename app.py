@@ -4,7 +4,7 @@ Monday.com App Backend + Static File Server
 """
 
 import os
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, send_from_directory
 from flask_cors import CORS
 import pymssql
 from datetime import datetime, date
@@ -68,8 +68,23 @@ def filter_branch(rows, key, branch):
 def today_str():
     return datetime.now().strftime("%Y-%m-%d")
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 @app.route("/")
 def index():
+    # Serve the live dashboard as the default page
+    return send_from_directory(BASE_DIR, "mcl_dashboard.html")
+
+@app.route("/dashboard")
+def dashboard():
+    return send_from_directory(BASE_DIR, "mcl_dashboard.html")
+
+@app.route("/report")
+def report():
+    return send_from_directory(BASE_DIR, "mcl_portfolio_report.html")
+
+@app.route("/widget")
+def widget():
     return render_template("widget.html")
 
 @app.route("/health")
