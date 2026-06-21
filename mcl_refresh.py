@@ -165,6 +165,46 @@ def write_total_row(ws, row, values):
     ws.row_dimensions[row].height = 16
 
 
+# ── Arrears KPIs from sp_PortfolioByLoanCategory (exclude Performing) ──
+def calc_arrears_kpis(as_at_date):
+    """
+    Derive arrears count, amount and PAR% from sp_PortfolioByLoanCategory.
+    Performing rows are excluded — only Watch 1, Watch 2, Substandard,
+    Doubtful and Loss contribute to the arrears totals.
+    """
+    try:
+        rows = run_sp("sp_PortfolioByLoanCategory", as_at_date=as_at_date)
+        rows = [r for r in rows if str(r.get("LoanCategory","")).upper() not in ("TOTAL","")]
+        arrears_rows  = [r for r in rows if "PERFORMING" not in str(r.get("LoanCategory","")).upper()]
+        all_bal_rows  = rows  # total includes performing for PAR % denominator
+
+        def first_val(row, *keys):
+            for k in keys:
+                if k in row and row[k] is not None:
+                    try: return float(row[k])
+                    except: pass
+            return 0.0
+
+        bal_keys = ["TotalOutstandingBalance","TotalLoanBalance","TotalBalance","OutstandingBalance"]
+        arr_keys = ["AmountInArrears","ArrearsAmount","Arrears"]
+        cnt_keys = ["LoanCount","Count","LoansCount","NumberOfLoans"]
+
+        amount_in_arrears = sum(first_val(r, *arr_keys) for r in arrears_rows)
+        loans_in_arrears  = sum(first_val(r, *cnt_keys) for r in arrears_rows)
+        total_bal         = sum(first_val(r, *bal_keys) for r in all_bal_rows)
+        arrears_bal       = sum(first_val(r, *bal_keys) for r in arrears_rows)
+        par_pct           = (arrears_bal / total_bal * 100) if total_bal > 0 else 0
+
+        return {
+            "amount_in_arrears": amount_in_arrears,
+            "loans_in_arrears":  int(loans_in_arrears),
+            "par_percentage":    round(par_pct, 2),
+            "total_balance":     total_bal,
+        }
+    except Exception as e:
+        return {"error": str(e), "amount_in_arrears": 0, "loans_in_arrears": 0, "par_percentage": 0, "total_balance": 0}
+
+
 # ── Sheet 1: Summary ──────────────────────────────────────────
 def build_summary_sheet(wb, as_at_date, branch="ALL"):
     ws = wb.active
@@ -221,14 +261,15 @@ def build_summary_sheet(wb, as_at_date, branch="ALL"):
     except Exception as e:
         kpi_labels.append("Principal Outstanding"); kpi_values.append(f"Error: {e}"); kpi_subs.append(""); kpi_colors.append(RED)
 
-    try:
-        r = run_scalar("sp_Portfoliainarrears")
-        kpi_labels.append("Amount in Arrears");  kpi_values.append(r["TotalAmountInArrears"] if r else 0); kpi_subs.append("KES"); kpi_colors.append(RED)
-        kpi_labels.append("Loans in Arrears");   kpi_values.append(r["LoanCount"] if r else 0);           kpi_subs.append("accounts overdue"); kpi_colors.append("C05621")
-        kpi_labels.append("Portfolio at Risk");  kpi_values.append(r["PercentageInArrears"] if r else 0); kpi_subs.append("PAR %"); kpi_colors.append("553C9A")
-    except Exception as e:
-        for lbl in ["Amount in Arrears","Loans in Arrears","Portfolio at Risk"]:
-            kpi_labels.append(lbl); kpi_values.append(f"Error: {e}"); kpi_subs.append(""); kpi_colors.append(RED)
+    # Arrears KPIs — derived from sp_PortfolioByLoanCategory (Watch 1+ only)
+    arrears = calc_arrears_kpis(as_at_date)
+    if "error" in arrears:
+        for lbl in ["Amount in Arrears","Loans in Arrears","Portfolio at Risk (PAR)"]:
+            kpi_labels.append(lbl); kpi_values.append(f"Error: {arrears['error']}"); kpi_subs.append(""); kpi_colors.append(RED)
+    else:
+        kpi_labels.append("Amount in Arrears");     kpi_values.append(arrears["amount_in_arrears"]); kpi_subs.append("KES — Watch 1+ only"); kpi_colors.append(RED)
+        kpi_labels.append("Loans in Arrears");      kpi_values.append(arrears["loans_in_arrears"]);  kpi_subs.append("accounts — Watch 1+ only"); kpi_colors.append("C05621")
+        kpi_labels.append("Portfolio at Risk (PAR)"); kpi_values.append(arrears["par_percentage"]);  kpi_subs.append("PAR % (excl. Performing)"); kpi_colors.append("553C9A")
 
     # Write KPI cards (2 rows of 3)
     card_row = kpi_row + 1
@@ -266,13 +307,12 @@ def build_summary_sheet(wb, as_at_date, branch="ALL"):
     ws.row_dimensions[nav_row].height = 18
 
     sheets_info = [
-        ("Branch Arrears",    "sp_PortfolioInArrearsByBranch",   "Portfolio in arrears by branch — loan count, arrears amount, balance, PAR%"),
-        ("Loan Products",     "sp_PortfolioByLoanProduct",        "Portfolio breakdown by loan product type"),
-        ("Loan Category",     "sp_PortfolioByLoanCategory",       "Portfolio by credit classification (Performing, Watch, Substandard, Doubtful, Loss)"),
-        ("Active Loans",      "sp_ActiveLoanCount",               "Total count of active loans"),
-        ("Total Balance",     "sp_TotalLoanBalance",              "Total loan balance outstanding"),
-        ("Principal Balance", "sp_LoanPrincipalBalance",          "Principal outstanding balance"),
-        ("Portfolio Arrears", "sp_Portfoliainarrears",            "Overall portfolio in arrears — total amount, count, PAR%"),
+        ("Branch Arrears",    "sp_PortfolioInArrearsByBranch",           "Branch-level arrears, outstanding balance and PAR%"),
+        ("Loan Category",     "sp_PortfolioByLoanCategory",              "Watch 1+ arrears section + Performing section (separated). Arrears KPIs derived from this SP."),
+        ("Category by Branch","sp_PortfolioArrearsByBranchArrears",      "Loan category arrears breakdown per branch (Watch 1+ only, Performing excluded)"),
+        ("Active Loans",      "sp_ActiveLoanCount",                      "Total count of active loans in the portfolio"),
+        ("Total Balance",     "sp_TotalLoanBalance",                     "Total loan balance outstanding"),
+        ("Principal Balance", "sp_LoanPrincipalBalance",                 "Principal outstanding balance"),
     ]
     nav_row += 1
     write_header_row(ws, nav_row, ["Sheet Name","Stored Procedure","Description"])
@@ -580,20 +620,20 @@ def build_workbook(as_at_date, branch="ALL"):
     print(f"  Database   : {SQL_DATABASE} @ {SQL_SERVER}")
     print()
 
-    # Sheet 1: Summary
-    print("  [1/8] Summary KPIs ...")
+    # Sheet 1: Summary KPIs
+    print("  [1/7] Summary KPIs ...")
     build_summary_sheet(wb, as_at_date, branch=branch_label)
     print("        Done")
 
-    # Sheet 2: Branch Arrears — filter post-fetch
-    print("  [2/8] sp_PortfolioInArrearsByBranch ...")
+    # Sheet 2: Branch Arrears — sp_PortfolioInArrearsByBranch
+    print("  [2/7] sp_PortfolioInArrearsByBranch ...")
     build_sp_sheet(
         wb,
         sheet_name="Branch Arrears",
         sp_name="sp_PortfolioInArrearsByBranch",
         as_at_date=as_at_date,
         title=f"Portfolio in Arrears by Branch{' — '+branch_label if is_filtered else ''}",
-        subtitle="Branch-level arrears, loan balance and PAR percentage",
+        subtitle="Branch-level arrears, loan balance and PAR % (Watch 1+ only)",
         col_formats={3:"int", 4:"kes", 5:"kes", 6:"pct"},
         par_col=6,
         filter_total_col="BranchName",
@@ -601,62 +641,51 @@ def build_workbook(as_at_date, branch="ALL"):
     )
     print("        Done")
 
-    # Sheet 3: Loan Products — filter post-fetch if SP returns BranchName
-    print("  [3/8] sp_PortfolioByLoanProduct ...")
+    # Sheet 3: Loan Category — arrears rows (Watch 1+) separated from Performing
+    print("  [3/7] sp_PortfolioByLoanCategory ...")
+    build_category_sheet(wb, as_at_date, branch=branch_label)
+    print("        Done")
+
+    # Sheet 4: Loan Categories by Branch — sp_PortfolioArrearsByBranchArrears
+    print("  [4/7] sp_PortfolioArrearsByBranchArrears ...")
     build_sp_sheet(
         wb,
-        sheet_name="Loan Products",
-        sp_name="sp_PortfolioByLoanProduct",
+        sheet_name="Category by Branch",
+        sp_name="sp_PortfolioArrearsByBranchArrears",
         as_at_date=as_at_date,
-        title=f"Portfolio by Loan Product{' — '+branch_label if is_filtered else ''}",
-        subtitle="Arrears and balance breakdown by loan product type",
-        col_formats={2:"int", 3:"kes", 4:"kes", 5:"pct"},
-        par_col=5,
-        filter_total_col="LoanProductType",
+        title=f"Loan Categories by Branch{' — '+branch_label if is_filtered else ''}",
+        subtitle="Arrears breakdown by loan category per branch — Watch 1+ (Performing excluded)",
+        filter_total_col="BranchName",
         branch_filter=(branch_label, "BranchName"),
     )
     print("        Done")
 
-    # Sheet 4: Loan Category (Performing separated — not in arrears)
-    print("  [4/8] sp_PortfolioByLoanCategory ...")
-    build_category_sheet(wb, as_at_date, branch=branch_label)
-    print("        Done")
-
-    # Sheet 5: Active Loans (summary — no branch split)
-    print("  [5/8] sp_ActiveLoanCount ...")
+    # Sheet 5: Active Loans
+    print("  [5/7] sp_ActiveLoanCount ...")
     build_sp_sheet(
         wb, sheet_name="Active Loans", sp_name="sp_ActiveLoanCount",
-        as_at_date=None, title="Active Loan Count",
+        as_at_date=as_at_date, title="Active Loan Count",
         subtitle="Total number of active loans in the portfolio",
     )
     print("        Done")
 
     # Sheet 6: Total Loan Balance
-    print("  [6/8] sp_TotalLoanBalance ...")
+    print("  [6/7] sp_TotalLoanBalance ...")
     build_sp_sheet(
         wb, sheet_name="Total Balance", sp_name="sp_TotalLoanBalance",
-        as_at_date=None, title="Total Loan Balance",
+        as_at_date=as_at_date, title="Total Loan Balance",
         subtitle="Principal outstanding balance across all active loans",
         col_formats={1:"kes"},
     )
     print("        Done")
 
     # Sheet 7: Principal Balance
-    print("  [7/8] sp_LoanPrincipalBalance ...")
+    print("  [7/7] sp_LoanPrincipalBalance ...")
     build_sp_sheet(
         wb, sheet_name="Principal Balance", sp_name="sp_LoanPrincipalBalance",
-        as_at_date=None, title="Loan Principal Balance",
-        subtitle="Principal outstanding balance", col_formats={1:"kes"},
-    )
-    print("        Done")
-
-    # Sheet 8: Portfolio Arrears
-    print("  [8/8] sp_Portfoliainarrears ...")
-    build_sp_sheet(
-        wb, sheet_name="Portfolio Arrears", sp_name="sp_Portfoliainarrears",
-        as_at_date=None, title="Portfolio in Arrears — Overall",
-        subtitle="Total arrears, loan count in arrears, PAR percentage",
-        col_formats={1:"kes", 3:"pct"},
+        as_at_date=as_at_date, title="Loan Principal Balance",
+        subtitle="Principal outstanding balance",
+        col_formats={1:"kes"},
     )
     print("        Done")
 
