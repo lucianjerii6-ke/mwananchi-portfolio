@@ -938,6 +938,49 @@ function chartOpts(unit, legend=false) {
     }
   };
 }
+
+// ── DEBUG PANEL ───────────────────────────────────────
+// Activate by pressing Shift+D on keyboard, or append ?debug=1 to URL
+let debugVisible = false;
+async function showDebugPanel() {
+  let panel = document.getElementById('debugPanel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'debugPanel';
+    panel.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1e1e2e;color:#cdd6f4;font-family:monospace;font-size:11px;padding:12px 16px;max-height:40vh;overflow:auto;z-index:9999;border-top:2px solid #F7941D';
+    document.body.appendChild(panel);
+  }
+  panel.innerHTML = '<b style="color:#F7941D">Loading debug info...</b>';
+  panel.style.display = 'block';
+  debugVisible = true;
+  try {
+    const date = document.getElementById('filterDate').value || new Date().toISOString().split('T')[0];
+    const r = await fetch(`${API_BASE}/api/debug-all?date=${date}`);
+    const d = await r.json();
+    let html = `<b style="color:#F7941D">MCL Debug — ${date}</b> &nbsp; <span style="color:#888;font-size:10px">Press Shift+D to hide</span><br><br>`;
+    for (const [key, val] of Object.entries(d.results || {})) {
+      if (val.error) {
+        html += `<span style="color:#f38ba8"><b>${key}</b> (${val.sp}): ERROR — ${val.error}</span><br>`;
+      } else {
+        const cols = val.columns.join(', ') || '(none)';
+        const sampleVals = Object.entries(val.sample||{}).map(([k,v])=>`${k}=${v}`).join(' | ');
+        html += `<b style="color:#a6e3a1">${key}</b> <span style="color:#888">(${val.sp})</span> — ${val.row_count} rows<br>`;
+        html += `&nbsp;&nbsp;Columns: <span style="color:#89dceb">${cols}</span><br>`;
+        html += `&nbsp;&nbsp;Sample:  <span style="color:#f9e2af">${sampleVals||'(empty)'}</span><br><br>`;
+      }
+    }
+    panel.innerHTML = html;
+  } catch(e) {
+    panel.innerHTML = `<span style="color:#f38ba8">Debug fetch failed: ${e.message}</span>`;
+  }
+}
+function toggleDebug() {
+  const panel = document.getElementById('debugPanel');
+  if (debugVisible && panel) { panel.style.display='none'; debugVisible=false; }
+  else showDebugPanel();
+}
+document.addEventListener('keydown', e => { if (e.shiftKey && e.key === 'D') toggleDebug(); });
+if (new URLSearchParams(location.search).get('debug') === '1') showDebugPanel();
 </script>
 </body>
 </html>

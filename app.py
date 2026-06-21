@@ -65,6 +65,16 @@ def filter_branch(rows, key, branch):
         return rows
     return [r for r in rows if str(r.get(key, "")).upper() == branch.upper()]
 
+def filter_branch_auto(rows, branch):
+    """Filter by branch using whichever branch column exists in the rows."""
+    if not branch or branch.upper() == "ALL" or not rows:
+        return rows
+    for key in ['BranchName', 'Branch', 'BranchCode', 'BranchTitle']:
+        if key in rows[0]:
+            filtered = [r for r in rows if str(r.get(key, "")).upper() == branch.upper()]
+            return filtered if filtered else rows  # return all if no match (SP may not have branch breakdown)
+    return rows  # no branch column found — return unfiltered
+
 def today_str():
     return datetime.now().strftime("%Y-%m-%d")
 
@@ -169,8 +179,9 @@ def api_loan_product():
     dt     = request.args.get("date", today_str())
     try:
         rows = run_sp("sp_PortfolioByLoanProduct", as_at_date=dt)
-        rows = [r for r in rows if str(r.get("LoanProductType", "")).upper() != "TOTAL"]
-        return jsonify({"status": "ok", "data": rows, "refreshed_at": datetime.now().isoformat()})
+        rows = [r for r in rows if str(r.get("LoanProductType", "")).upper() not in ("TOTAL", "")]
+        rows = filter_branch_auto(rows, branch)
+        return jsonify({"status": "ok", "data": rows, "columns": list(rows[0].keys()) if rows else [], "refreshed_at": datetime.now().isoformat()})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -180,10 +191,37 @@ def api_loan_category():
     dt     = request.args.get("date", today_str())
     try:
         rows = run_sp("sp_PortfolioByLoanCategory", as_at_date=dt)
-        rows = [r for r in rows if str(r.get("LoanCategory", "")).upper() != "TOTAL"]
-        return jsonify({"status": "ok", "data": rows, "refreshed_at": datetime.now().isoformat()})
+        rows = [r for r in rows if str(r.get("LoanCategory", "")).upper() not in ("TOTAL", "")]
+        rows = filter_branch_auto(rows, branch)
+        return jsonify({"status": "ok", "data": rows, "columns": list(rows[0].keys()) if rows else [], "refreshed_at": datetime.now().isoformat()})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/debug-all")
+def api_debug_all():
+    """Return columns + sample row from every SP — for diagnosing missing numbers."""
+    dt = request.args.get("date", today_str())
+    sps = [
+        ("summary_active",    "sp_ActiveLoanCount"),
+        ("summary_total",     "sp_TotalLoanBalance"),
+        ("summary_principal", "sp_LoanPrincipalBalance"),
+        ("summary_par",       "sp_Portfoliainarrears"),
+        ("branch_arrears",    "sp_PortfolioInArrearsByBranch"),
+        ("loan_product",      "sp_PortfolioByLoanProduct"),
+        ("loan_category",     "sp_PortfolioByLoanCategory"),
+    ]
+    result = {}
+    for key, sp in sps:
+        try:
+            rows = run_sp(sp, as_at_date=dt)
+            result[key] = {
+                "sp": sp, "row_count": len(rows),
+                "columns": list(rows[0].keys()) if rows else [],
+                "sample": rows[0] if rows else {}
+            }
+        except Exception as e:
+            result[key] = {"sp": sp, "error": str(e)}
+    return jsonify({"status": "ok", "date": dt, "results": result})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5050))
