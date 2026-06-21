@@ -413,10 +413,19 @@ let charts = {};   // track Chart.js instances for cleanup
 let reportData = {};
 
 // ── init ──────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('filterDate').value = today;
-  loadBranches();
+  await loadBranches();
+  runReport();  // auto-load today's data on page open
+
+  // re-run when branch changes
+  document.getElementById('filterBranch').addEventListener('change', () => runReport());
+  // re-run when date changes (on blur / enter, not every keystroke)
+  document.getElementById('filterDate').addEventListener('change', async () => {
+    await reloadBranches();
+    runReport();
+  });
 });
 
 async function loadBranches() {
@@ -432,6 +441,26 @@ async function loadBranches() {
       sel.appendChild(o);
     });
   } catch(e) { /* server not running yet — ignore */ }
+}
+
+async function reloadBranches() {
+  try {
+    const date = document.getElementById('filterDate').value;
+    const sel  = document.getElementById('filterBranch');
+    const prev = sel.value;
+    // clear all options except first (ALL)
+    while (sel.options.length > 1) sel.remove(1);
+    const r = await fetch(`${API_BASE}/api/branches?date=${date}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    (data.branches || []).forEach(b => {
+      const o = document.createElement('option');
+      o.value = b; o.textContent = b;
+      sel.appendChild(o);
+    });
+    // restore previous selection if still available, else reset to ALL
+    sel.value = [...sel.options].some(o => o.value === prev) ? prev : 'ALL';
+  } catch(e) { /* ignore */ }
 }
 
 // ── run report ────────────────────────────────────────
