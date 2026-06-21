@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mwananchi Credit — Portfolio Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:    #020F71;  --navy-dk: #010B52;  --navy-lt: #0D1F8C;
+  --orange:  #F7941D;  --orange-lt: #FFA94D;
+  --white:   #FFFFFF;  --off:   #F7F8FC;
+  --grey-lt: #EEF0F8;  --grey:  #6B7280;   --border: #E2E6F0;
+  --green:   #15803D;  --green-bg: #DCFCE7;
+  --red:     #DC2626;  --red-bg:   #FEE2E2;
+  --amber:   #B45309;  --amber-bg: #FEF3C7;
+  --purple:  #6B21A8;  --purple-bg:#F3E8FF;
+}
+html, body { font-family:'Figtree',sans-serif; background:var(--off); color:#1a1f3c; font-size:14px; line-height:1.6; }
+
+/* ── HEADER ─── */
+.header {
+  background: linear-gradient(135deg, var(--navy-dk) 0%, var(--navy) 65%, var(--navy-lt) 100%);
+  position: relative; overflow: hidden;
+}
+.header::before {
+  content:''; position:absolute; top:-80px; right:-80px;
+  width:320px; height:320px; background:var(--orange); opacity:.06; border-radius:50%;
+}
+.header-inner {
+  max-width:1280px; margin:0 auto; padding:22px 28px 0;
+  display:flex; align-items:center; justify-content:space-between;
+  position:relative; z-index:1;
+}
+.logo-area { display:flex; align-items:center; gap:14px; }
+.logo-icon svg { width:46px; height:46px; }
+.logo-name { font-size:20px; font-weight:800; color:#fff; letter-spacing:-.3px; }
+.logo-name span { color:var(--orange); }
+.logo-tag { font-size:9px; font-weight:600; color:rgba(255,255,255,.5); letter-spacing:2.5px; text-transform:uppercase; }
+.header-right { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+.report-label { font-size:11px; font-weight:600; color:rgba(255,255,255,.6); letter-spacing:.5px; text-transform:uppercase; }
+.report-title { font-size:18px; font-weight:700; color:#fff; }
+
+/* ── FILTER BAR ─── */
+.filter-bar {
+  max-width:1280px; margin:0 auto; padding:14px 28px 18px;
+  display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap;
+  position:relative; z-index:1;
+}
+.filter-group { display:flex; flex-direction:column; gap:5px; }
+.filter-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:rgba(255,255,255,.6); }
+.filter-input {
+  background:rgba(255,255,255,.12); border:1.5px solid rgba(255,255,255,.2);
+  border-radius:8px; padding:8px 14px; color:#fff; font-family:'Figtree',sans-serif;
+  font-size:13px; font-weight:600; outline:none; min-width:160px;
+  transition:border-color .2s, background .2s;
+}
+.filter-input:focus { background:rgba(255,255,255,.2); border-color:var(--orange); }
+.filter-input option { background:var(--navy); color:#fff; }
+.filter-input::placeholder { color:rgba(255,255,255,.4); }
+.btn {
+  padding:9px 22px; border-radius:8px; font-family:'Figtree',sans-serif;
+  font-size:13px; font-weight:700; cursor:pointer; border:none;
+  transition:all .2s; display:flex; align-items:center; gap:7px;
+}
+.btn-primary { background:var(--orange); color:#fff; }
+.btn-primary:hover { background:var(--orange-lt); transform:translateY(-1px); }
+.btn-secondary { background:rgba(255,255,255,.15); color:#fff; border:1.5px solid rgba(255,255,255,.3); }
+.btn-secondary:hover { background:rgba(255,255,255,.25); }
+.btn-excel { background:#1D6F42; color:#fff; }
+.btn-excel:hover { background:#155233; }
+.btn:disabled { opacity:.5; cursor:not-allowed; transform:none !important; }
+
+.stripe { background:var(--orange); height:4px; }
+.active-filter-badge {
+  background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25);
+  border-radius:20px; padding:4px 12px; font-size:11px; font-weight:600;
+  color:rgba(255,255,255,.9); margin-left:auto; align-self:center;
+}
+
+/* ── BODY ─── */
+.body { max-width:1280px; margin:0 auto; padding:24px 24px 48px; }
+
+/* ── STATES ─── */
+.state-box {
+  background:#fff; border-radius:16px; border:1px solid var(--border);
+  padding:48px 32px; text-align:center; margin-top:24px;
+}
+.state-icon { font-size:40px; margin-bottom:12px; }
+.state-title { font-size:18px; font-weight:700; color:var(--navy); margin-bottom:8px; }
+.state-body  { font-size:13px; color:var(--grey); max-width:480px; margin:0 auto; line-height:1.7; }
+.state-body code { background:var(--grey-lt); padding:2px 8px; border-radius:4px; font-size:12px; }
+.state-box.error .state-title { color:var(--red); }
+#loadingState, #errorState, #emptyState { display:none; }
+#reportContent { display:none; }
+
+/* spinner */
+.spinner {
+  width:40px; height:40px; border-radius:50%;
+  border:4px solid var(--grey-lt); border-top-color:var(--orange);
+  animation:spin .8s linear infinite; margin:0 auto 16px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── SECTION LABEL ─── */
+.sec-label {
+  font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  color:var(--orange); margin:28px 0 14px; display:flex; align-items:center; gap:10px;
+}
+.sec-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── KPI CARDS ─── */
+.kpi-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:28px; }
+.kpi-card {
+  background:#fff; border-radius:14px; padding:20px 22px;
+  border:1px solid var(--border); position:relative; overflow:hidden;
+  transition:box-shadow .2s;
+}
+.kpi-card:hover { box-shadow:0 6px 24px rgba(2,15,113,.09); }
+.kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--navy); }
+.kpi-card.orange::before { background:var(--orange); }
+.kpi-card.green::before  { background:var(--green); }
+.kpi-card.red::before    { background:var(--red); }
+.kpi-label { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.8px; color:var(--grey); margin-bottom:7px; }
+.kpi-value { font-size:24px; font-weight:800; color:var(--navy); line-height:1.1; letter-spacing:-.5px; }
+.kpi-sub   { font-size:11.5px; color:var(--grey); margin-top:4px; font-weight:500; }
+.kpi-badge {
+  display:inline-block; padding:2px 10px; border-radius:20px;
+  font-size:10.5px; font-weight:700; margin-top:6px;
+}
+.badge-green  { background:var(--green-bg);  color:var(--green); }
+.badge-red    { background:var(--red-bg);    color:var(--red); }
+.badge-amber  { background:var(--amber-bg);  color:var(--amber); }
+.badge-navy   { background:var(--grey-lt);   color:var(--navy); }
+.badge-purple { background:var(--purple-bg); color:var(--purple); }
+
+/* ── CARD ─── */
+.card { background:#fff; border-radius:14px; border:1px solid var(--border); overflow:hidden; margin-bottom:20px; }
+.card-header {
+  padding:14px 20px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.card-title { font-size:13px; font-weight:700; color:var(--navy); }
+.card-body  { padding:20px; }
+.two-col  { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:0; }
+
+/* ── CHARTS ─── */
+.chart-wrap { position:relative; height:220px; }
+
+/* ── TABLE ─── */
+.tbl-wrap { overflow-x:auto; }
+.tbl { width:100%; border-collapse:collapse; font-size:12.5px; }
+.tbl th {
+  background:var(--navy); color:#fff; padding:9px 13px;
+  font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.7px; text-align:left;
+}
+.tbl td { padding:10px 13px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.tbl tr:last-child td { border-bottom:none; }
+.tbl tr:nth-child(even) td { background:#FAFBFE; }
+.tbl tr:hover td { background:#EFF6FF; }
+.tbl .num { text-align:right; font-weight:600; font-variant-numeric:tabular-nums; }
+.tbl .bold { font-weight:700; }
+.tbl tfoot td { background:var(--navy) !important; color:#fff; font-weight:700; font-size:12px; border-bottom:none; }
+.tbl tfoot .num { color:#fff; }
+
+/* pill */
+.pill { display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap; }
+.pill-performing  { background:var(--green-bg);  color:var(--green); }
+.pill-watch1      { background:var(--amber-bg);  color:var(--amber); }
+.pill-watch2      { background:#FFEDD5;           color:#9A3412; }
+.pill-substandard { background:var(--red-bg);     color:#991B1B; }
+.pill-doubtful    { background:var(--purple-bg);  color:var(--purple); }
+.pill-loss        { background:#3B0000;            color:#FCA5A5; }
+
+/* risk stack */
+.risk-stack { display:flex; height:10px; border-radius:5px; overflow:hidden; margin:12px 0 18px; gap:2px; }
+.risk-seg   { height:100%; border-radius:2px; }
+
+/* performing section */
+.section-performing {
+  background:var(--green-bg); border:1.5px solid #86EFAC;
+  border-radius:10px; padding:12px 16px; margin-bottom:10px;
+}
+.section-arrears {
+  background:var(--red-bg); border:1.5px solid #FCA5A5;
+  border-radius:10px; padding:12px 16px;
+}
+.section-head { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+.section-performing .section-head { color:var(--green); }
+.section-arrears    .section-head { color:var(--red); }
+
+/* insights */
+.insight-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+.insight-card {
+  background:#fff; border-radius:12px; padding:16px 18px;
+  border:1px solid var(--border); border-left:4px solid var(--navy);
+}
+.insight-card.warn { border-left-color:var(--orange); }
+.insight-card.crit { border-left-color:var(--red); }
+.insight-card.good { border-left-color:var(--green); }
+.insight-head { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:5px; color:var(--navy); }
+.insight-card.warn .insight-head { color:#92400E; }
+.insight-card.crit .insight-head { color:var(--red); }
+.insight-card.good .insight-head { color:var(--green); }
+.insight-body { font-size:12.5px; color:#374151; line-height:1.55; }
+.insight-num  { font-size:20px; font-weight:800; display:block; margin-bottom:2px; }
+
+/* footer */
+.footer { background:var(--navy); padding:16px 28px; display:flex; align-items:center; justify-content:space-between; }
+.footer-left { color:rgba(255,255,255,.5); font-size:11px; font-weight:500; }
+.footer-right { color:var(--orange); font-weight:700; font-size:12px; }
+
+@media(max-width:900px) {
+  .kpi-grid    { grid-template-columns:1fr 1fr; }
+  .two-col     { grid-template-columns:1fr; }
+  .insight-grid{ grid-template-columns:1fr 1fr; }
+}
+@media(max-width:600px) {
+  .kpi-grid { grid-template-columns:1fr; }
+  .insight-grid { grid-template-columns:1fr; }
+  .filter-bar { flex-direction:column; align-items:stretch; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────── -->
+<div class="header">
+  <div class="header-inner">
+    <div class="logo-area">
+      <div class="logo-icon">
+        <svg viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M27 7C27 7,16 13,16 23C16 31,22 37,29 39" stroke="#F7941D" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+          <path d="M34 11C34 11,21 17,21 27C21 35,27 41,35 43" stroke="#F7941D" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.55"/>
+          <path d="M20 5C20 5,10 11,10 21C10 29,16 35,23 37" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">Mwananchi <span>Credit</span></div>
+        <div class="logo-tag">Investor in People</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="report-label">Live Portfolio Dashboard</div>
+      <div class="report-title" id="reportHeading">Select filters and run report</div>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <div class="filter-label">As at Date</div>
+      <input type="date" id="filterDate" class="filter-input" />
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Branch</div>
+      <select id="filterBranch" class="filter-input">
+        <option value="ALL">All Branches</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" id="btnRun" onclick="runReport()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5,3 19,12 5,21"/></svg>
+      Run Report
+    </button>
+    <button class="btn btn-excel" id="btnExcel" onclick="exportExcel()" disabled>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Export to Excel
+    </button>
+    <div class="active-filter-badge" id="activeBadge" style="display:none"></div>
+  </div>
+</div>
+<div class="stripe"></div>
+
+<!-- ── BODY ───────────────────────────────────── -->
+<div class="body">
+
+  <!-- INITIAL STATE -->
+  <div class="state-box" id="initialState">
+    <div class="state-icon">📊</div>
+    <div class="state-title">Portfolio Dashboard</div>
+    <div class="state-body">
+      Select a date and optional branch filter above, then click <strong>Run Report</strong> to pull live data from SQL Server.<br><br>
+      Make sure the Flask server is running:<br>
+      <code>bash ~/mwananchi-portfolio/MCL_Launch.command</code>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="state-box" id="loadingState">
+    <div class="spinner"></div>
+    <div class="state-title">Fetching data from SQL Server...</div>
+    <div class="state-body" id="loadingMsg">Running stored procedures</div>
+  </div>
+
+  <!-- ERROR -->
+  <div class="state-box error" id="errorState">
+    <div class="state-icon">⚠</div>
+    <div class="state-title">Connection Error</div>
+    <div class="state-body" id="errorMsg"></div>
+  </div>
+
+  <!-- REPORT CONTENT -->
+  <div id="reportContent">
+
+    <!-- KPI CARDS -->
+    <div class="sec-label">Portfolio Overview</div>
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <!-- BRANCH ARREARS -->
+    <div class="sec-label" id="branchLabel">Branch Arrears</div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Arrears by Branch</span></div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="branchChart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Branch Detail</span>
+          <span class="kpi-badge badge-navy" id="branchCount"></span>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap"><table class="tbl" id="branchTable"></table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOAN PRODUCTS -->
+    <div class="sec-label">Loan Products</div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Portfolio by Loan Product</span></div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="productChart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Product Detail</span>
+          <span class="kpi-badge badge-navy" id="productCount"></span>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap"><table class="tbl" id="productTable"></table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOAN CATEGORY -->
+    <div class="sec-label">Loan Category Risk</div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Portfolio Composition</span></div>
+        <div class="card-body">
+          <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Category Breakdown</span>
+          <span class="kpi-badge badge-red" id="parBadge"></span>
+        </div>
+        <div class="card-body">
+          <div id="categoryBreakdown"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAR SUMMARY -->
+    <div class="sec-label">Portfolio at Risk Summary</div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">PAR Aging Buckets</span></div>
+      <div class="card-body">
+        <div id="parStack" class="risk-stack"></div>
+        <div class="tbl-wrap"><table class="tbl" id="parTable"></table></div>
+      </div>
+    </div>
+
+    <!-- INSIGHTS -->
+    <div class="sec-label">Key Insights</div>
+    <div class="insight-grid" id="insightGrid"></div>
+
+  </div><!-- /reportContent -->
+</div><!-- /body -->
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-left" id="footerLeft">Mwananchi Credit Ltd &nbsp;|&nbsp; Portfolio Management</div>
+  <div class="footer-right">Investor in People</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  CONFIGURATION — change API_BASE to your server URL
+//  e.g. 'https://your-tunnel-url.trycloudflare.com'
+// ═══════════════════════════════════════════════════════
+const API_BASE = 'http://localhost:5050';
+
+// ── colours ──────────────────────────────────────────
+const CAT_COLORS = {
+  'Performing':  '#15803D',
+  'Watch 1':     '#F7941D',
+  'Watch 2':     '#EA580C',
+  'Substandard': '#DC2626',
+  'Doubtful':    '#7C3AED',
+  'Loss':        '#450A0A',
+};
+const CHART_PALETTE = ['#020F71','#F7941D','#1D6F42','#EA580C','#6B21A8','#DC2626','#0891B2','#78716C'];
+
+// ── state ─────────────────────────────────────────────
+let charts = {};   // track Chart.js instances for cleanup
+let reportData = {};
+
+// ── init ──────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('filterDate').value = today;
+  loadBranches();
+});
+
+async function loadBranches() {
+  try {
+    const today = document.getElementById('filterDate').value;
+    const r = await fetch(`${API_BASE}/api/branches?date=${today}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    const sel  = document.getElementById('filterBranch');
+    (data.branches || []).forEach(b => {
+      const o = document.createElement('option');
+      o.value = b; o.textContent = b;
+      sel.appendChild(o);
+    });
+  } catch(e) { /* server not running yet — ignore */ }
+}
+
+// ── run report ────────────────────────────────────────
+async function runReport() {
+  const date   = document.getElementById('filterDate').value;
+  const branch = document.getElementById('filterBranch').value;
+
+  if (!date) { alert('Please select a date.'); return; }
+
+  showState('loading');
+  setMsg('loading', 'Running stored procedures against SQL Server...');
+  document.getElementById('btnRun').disabled = true;
+
+  try {
+    const [summary, branchArrears, products, category] = await Promise.all([
+      apiFetch(`/api/summary?date=${date}`),
+      apiFetch(`/api/branch-arrears?date=${date}&branch=${branch}`),
+      apiFetch(`/api/loan-product?date=${date}&branch=${branch}`),
+      apiFetch(`/api/loan-category?date=${date}&branch=${branch}`),
+    ]);
+
+    reportData = { date, branch, summary, branchArrears: branchArrears.data || [], products: products.data || [], category: category.data || [] };
+
+    renderReport(reportData);
+    showState('content');
+    document.getElementById('btnExcel').disabled = false;
+
+    // update heading and badge
+    const bl = branch === 'ALL' ? 'All Branches' : branch;
+    document.getElementById('reportHeading').textContent = `${fmtDate(date)} — ${bl}`;
+    document.getElementById('activeBadge').textContent = `Date: ${date}  |  Branch: ${bl}`;
+    document.getElementById('activeBadge').style.display = 'flex';
+    document.getElementById('footerLeft').textContent =
+      `Mwananchi Credit Ltd  |  ${bl}  |  As at ${fmtDate(date)}`;
+
+  } catch(e) {
+    showState('error');
+    setMsg('error',
+      `Could not connect to the Flask server at <code>${API_BASE}</code>.<br><br>` +
+      `Make sure the server is running:<br><code>bash ~/mwananchi-portfolio/MCL_Launch.command</code><br><br>` +
+      `Error: ${e.message}`
+    );
+  } finally {
+    document.getElementById('btnRun').disabled = false;
+  }
+}
+
+async function apiFetch(path) {
+  const r = await fetch(API_BASE + path);
+  if (!r.ok) throw new Error(`HTTP ${r.status} on ${path}`);
+  return r.json();
+}
+
+// ── render ────────────────────────────────────────────
+function renderReport({ date, branch, summary, branchArrears, products, category }) {
+  renderKPIs(summary, branchArrears, category);
+  renderBranchArrears(branchArrears, branch);
+  renderProducts(products);
+  renderCategory(category);
+  renderPAR(category);
+  renderInsights(summary, branchArrears, category);
+}
+
+// KPI cards
+function renderKPIs(s, branchRows, catRows) {
+  const parPct     = s.par_percentage ? +s.par_percentage : 0;
+  const totalBal   = branchRows.reduce((a,r) => a + num(r, 'TotalOutstandingBalance','TotalLoanBalance','TotalBalance'), 0);
+  const arrears    = branchRows.reduce((a,r) => a + num(r, 'AmountInArrears','AmountArrears'), 0);
+  const performing = catRows.find(r => /perform/i.test(r.LoanCategory || r.Category || ''));
+  const perfAmt    = performing ? num(performing,'TotalOutstandingBalance','TotalBalance','Amount') : 0;
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label">Active Loans</div>
+      <div class="kpi-value">${fmt0(s.active_loans)}</div>
+      <div class="kpi-sub">Loans under management</div>
+      <span class="kpi-badge badge-navy">Portfolio count</span>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Total Loan Balance</div>
+      <div class="kpi-value">${fmtM(s.total_balance)}</div>
+      <div class="kpi-sub">${fmtKES(s.total_balance)}</div>
+      <span class="kpi-badge badge-navy">Gross book</span>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Principal Outstanding</div>
+      <div class="kpi-value">${fmtM(s.principal_outstanding)}</div>
+      <div class="kpi-sub">${fmtKES(s.principal_outstanding)}</div>
+      <span class="kpi-badge badge-navy">Principal only</span>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Amount in Arrears</div>
+      <div class="kpi-value">${fmtM(s.amount_in_arrears)}</div>
+      <div class="kpi-sub">${fmt0(s.loan_count_in_arrears)} loans affected</div>
+      <span class="kpi-badge badge-red">Overdue amount</span>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Portfolio at Risk (PAR)</div>
+      <div class="kpi-value">${fmtPct(parPct)}</div>
+      <div class="kpi-sub">Company-wide PAR rate</div>
+      <span class="kpi-badge ${parPct > 5 ? 'badge-red' : parPct > 2 ? 'badge-amber' : 'badge-green'}">${parPct > 5 ? 'High Risk' : parPct > 2 ? 'Watch' : 'Acceptable'}</span>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Performing Portfolio</div>
+      <div class="kpi-value">${fmtM(perfAmt || s.total_balance - s.amount_in_arrears)}</div>
+      <div class="kpi-sub">Current, no arrears</div>
+      <span class="kpi-badge badge-green">Not in arrears</span>
+    </div>`;
+}
+
+// Branch Arrears
+function renderBranchArrears(rows, branch) {
+  document.getElementById('branchLabel').textContent =
+    branch === 'ALL' ? 'Branch Arrears' : `${branch} — Branch Detail`;
+  document.getElementById('branchCount').textContent = `${rows.length} branch${rows.length!==1?'es':''}`;
+
+  // detect columns
+  const nameCol = findCol(rows[0], ['BranchName','Branch','Name']);
+  const balCol  = findCol(rows[0], ['TotalOutstandingBalance','TotalLoanBalance','TotalBalance','Outstanding']);
+  const arrCol  = findCol(rows[0], ['AmountInArrears','AmountArrears','Arrears']);
+  const parCol  = findCol(rows[0], ['PARPercentage','PAR','PARPct','PercentageInArrears']);
+  const cntCol  = findCol(rows[0], ['LoanCount','Count','LoansCount','ActiveLoans']);
+
+  const labels = rows.map(r => r[nameCol] || 'Unknown');
+  const arrData = rows.map(r => num(r, arrCol));
+  const balData = rows.map(r => num(r, balCol));
+
+  destroyChart('branchChart');
+  const ctx = document.getElementById('branchChart').getContext('2d');
+  charts.branchChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label:'Total Balance',   data:balData, backgroundColor:'rgba(2,15,113,.15)', borderColor:'#020F71', borderWidth:1.5, borderRadius:4 },
+        { label:'Amount in Arrears', data:arrData, backgroundColor:'#F7941D', borderColor:'#EA580C', borderWidth:1, borderRadius:4 },
+      ]
+    },
+    options: chartOpts('KES', true)
+  });
+
+  // table
+  const totBal = balData.reduce((a,b)=>a+b,0);
+  const totArr = arrData.reduce((a,b)=>a+b,0);
+  const thead = `<thead><tr>
+    <th>Branch</th>
+    ${cntCol ? '<th class="num">Loans</th>' : ''}
+    <th class="num">Total Balance (KES)</th>
+    <th class="num">Arrears (KES)</th>
+    ${parCol ? '<th class="num">PAR %</th>' : ''}
+  </tr></thead>`;
+  const tbody = `<tbody>${rows.map(r=>`<tr>
+    <td class="bold">${r[nameCol]||'—'}</td>
+    ${cntCol ? `<td class="num">${fmt0(r[cntCol])}</td>` : ''}
+    <td class="num">${fmtKES(num(r,balCol))}</td>
+    <td class="num">${fmtKES(num(r,arrCol))}</td>
+    ${parCol ? `<td class="num">${fmtPct(num(r,parCol))}</td>` : ''}
+  </tr>`).join('')}</tbody>`;
+  const tfoot = `<tfoot><tr>
+    <td ${cntCol?'colspan="2"':''}><strong>TOTAL</strong></td>
+    <td class="num"><strong>${fmtKES(totBal)}</strong></td>
+    <td class="num"><strong>${fmtKES(totArr)}</strong></td>
+    ${parCol ? '<td class="num">—</td>' : ''}
+  </tr></tfoot>`;
+  document.getElementById('branchTable').innerHTML = thead + tbody + tfoot;
+}
+
+// Loan Products
+function renderProducts(rows) {
+  document.getElementById('productCount').textContent = `${rows.length} product${rows.length!==1?'s':''}`;
+
+  const nameCol = findCol(rows[0], ['LoanProductType','ProductType','Product','LoanProduct']);
+  const balCol  = findCol(rows[0], ['TotalOutstandingBalance','TotalLoanBalance','TotalBalance','Outstanding']);
+  const arrCol  = findCol(rows[0], ['AmountInArrears','AmountArrears','Arrears']);
+  const parCol  = findCol(rows[0], ['PARPercentage','PAR','PARPct','PercentageInArrears']);
+  const cntCol  = findCol(rows[0], ['LoanCount','Count','LoansCount']);
+
+  const labels  = rows.map(r => r[nameCol] || 'Unknown');
+  const balData = rows.map(r => num(r, balCol));
+  const arrData = rows.map(r => num(r, arrCol));
+
+  destroyChart('productChart');
+  const ctx = document.getElementById('productChart').getContext('2d');
+  charts.productChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label:'Total Balance',    data:balData, backgroundColor:CHART_PALETTE.map(c=>c+'33'), borderColor:CHART_PALETTE, borderWidth:1.5, borderRadius:4 },
+        { label:'Amount in Arrears', data:arrData, backgroundColor:'#F7941D', borderColor:'#EA580C', borderWidth:1, borderRadius:4 },
+      ]
+    },
+    options: chartOpts('KES', true)
+  });
+
+  const totBal = balData.reduce((a,b)=>a+b,0);
+  const totArr = arrData.reduce((a,b)=>a+b,0);
+  const thead = `<thead><tr>
+    <th>Product</th>
+    ${cntCol ? '<th class="num">Loans</th>' : ''}
+    <th class="num">Balance (KES)</th>
+    <th class="num">Arrears (KES)</th>
+    ${parCol ? '<th class="num">PAR %</th>' : ''}
+  </tr></thead>`;
+  const tbody = `<tbody>${rows.map(r=>`<tr>
+    <td class="bold">${r[nameCol]||'—'}</td>
+    ${cntCol ? `<td class="num">${fmt0(r[cntCol])}</td>` : ''}
+    <td class="num">${fmtKES(num(r,balCol))}</td>
+    <td class="num">${fmtKES(num(r,arrCol))}</td>
+    ${parCol ? `<td class="num">${fmtPct(num(r,parCol))}</td>` : ''}
+  </tr>`).join('')}</tbody>`;
+  const tfoot = `<tfoot><tr>
+    <td ${cntCol?'colspan="2"':''}><strong>TOTAL</strong></td>
+    <td class="num"><strong>${fmtKES(totBal)}</strong></td>
+    <td class="num"><strong>${fmtKES(totArr)}</strong></td>
+    ${parCol ? '<td class="num">—</td>' : ''}
+  </tr></tfoot>`;
+  document.getElementById('productTable').innerHTML = thead + tbody + tfoot;
+}
+
+// Loan Category
+function renderCategory(rows) {
+  const catCol = findCol(rows[0], ['LoanCategory','Category','LoanClass']);
+  const balCol = findCol(rows[0], ['TotalOutstandingBalance','TotalLoanBalance','TotalBalance','Outstanding']);
+  const arrCol = findCol(rows[0], ['AmountInArrears','AmountArrears','Arrears']);
+  const cntCol = findCol(rows[0], ['LoanCount','Count','LoansCount']);
+
+  const performing  = rows.filter(r => /perform/i.test(r[catCol]||''));
+  const arrearsRows = rows.filter(r => !/perform/i.test(r[catCol]||''));
+
+  const allForChart = [...arrearsRows, ...performing];
+  const labels  = allForChart.map(r => r[catCol]||'Unknown');
+  const balData = allForChart.map(r => num(r, balCol));
+  const colors  = allForChart.map(r => CAT_COLORS[r[catCol]] || '#6B7280');
+
+  destroyChart('categoryChart');
+  const ctx = document.getElementById('categoryChart').getContext('2d');
+  charts.categoryChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data:balData, backgroundColor:colors, borderColor:'#fff', borderWidth:3, hoverOffset:6 }] },
+    options: {
+      responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins: {
+        legend: { position:'bottom', labels:{ font:{family:'Figtree',size:11,weight:'600'}, padding:10, usePointStyle:true }},
+        tooltip: { callbacks: { label: ctx2 => {
+          const tot = ctx2.dataset.data.reduce((a,b)=>a+b,0);
+          return ` ${fmtKES(ctx2.parsed)} (${((ctx2.parsed/tot)*100).toFixed(1)}%)`;
+        }}, titleFont:{family:'Figtree',weight:'700'}, bodyFont:{family:'Figtree'} }
+      }
+    }
+  });
+
+  // PAR badge
+  const totArrears = arrearsRows.reduce((a,r)=>a+num(r,balCol),0);
+  const totAll     = rows.reduce((a,r)=>a+num(r,balCol),0);
+  const parBal     = totAll > 0 ? (totArrears/totAll*100).toFixed(1) : 0;
+  document.getElementById('parBadge').textContent = `PAR: ${parBal}% by balance`;
+  document.getElementById('parBadge').className = `kpi-badge ${parBal>10?'badge-red':parBal>5?'badge-amber':'badge-green'}`;
+
+  // breakdown
+  const arrRowsHtml = arrearsRows.map(r => {
+    const cat = r[catCol]||'Unknown';
+    const cl  = cat.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+    return `<div style="display:grid;grid-template-columns:140px 1fr auto;gap:8px;align-items:center;margin-bottom:8px">
+      <span class="pill pill-${cl}" style="background:${CAT_COLORS[cat]||'#999'}22;color:${CAT_COLORS[cat]||'#999'}">${cat}</span>
+      <div style="background:var(--grey-lt);border-radius:4px;height:7px">
+        <div style="width:${totAll>0?(num(r,balCol)/totAll*100).toFixed(1):0}%;height:7px;border-radius:4px;background:${CAT_COLORS[cat]||'#999'}"></div>
+      </div>
+      <span style="font-size:12px;font-weight:700;color:var(--navy);white-space:nowrap">${fmtKES(num(r,balCol))}</span>
+    </div>`;
+  }).join('');
+
+  const perfRowsHtml = performing.map(r => {
+    const cnt = cntCol ? `&nbsp;&nbsp;<span style="color:var(--grey);font-size:11px">${fmt0(r[cntCol])} loans</span>` : '';
+    return `<div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px;font-weight:600;color:var(--green)">${r[catCol]||'Performing'}${cnt}</span>
+      <span style="font-size:13px;font-weight:800;color:var(--green)">${fmtKES(num(r,balCol))}</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('categoryBreakdown').innerHTML =
+    (arrearsRows.length ? `<div class="section-arrears"><div class="section-head">In Arrears</div>${arrRowsHtml}</div>` : '') +
+    (performing.length  ? `<div class="section-performing" style="margin-top:10px"><div class="section-head">Not in Arrears (Performing)</div>${perfRowsHtml}</div>` : '');
+}
+
+// PAR Aging Summary
+function renderPAR(catRows) {
+  const catCol = findCol(catRows[0], ['LoanCategory','Category','LoanClass']);
+  const balCol = findCol(catRows[0], ['TotalOutstandingBalance','TotalLoanBalance','TotalBalance','Outstanding']);
+  const arrCol = findCol(catRows[0], ['AmountInArrears','AmountArrears','Arrears']);
+  const cntCol = findCol(catRows[0], ['LoanCount','Count','LoansCount']);
+
+  const totBal = catRows.reduce((a,r)=>a+num(r,balCol),0);
+
+  // stacked bar
+  const stackHtml = catRows.map(r => {
+    const cat = r[catCol]||'Unknown';
+    const pct = totBal > 0 ? (num(r,balCol)/totBal*100).toFixed(1) : 0;
+    const clr = CAT_COLORS[cat]||'#999';
+    return `<div class="risk-seg" style="width:${pct}%;background:${clr}" title="${cat}: ${pct}%"></div>`;
+  }).join('');
+  document.getElementById('parStack').innerHTML = stackHtml;
+
+  // table
+  const thead = `<thead><tr>
+    <th>Category</th>
+    ${cntCol?'<th class="num">Loans</th>':''}
+    <th class="num">Outstanding (KES)</th>
+    <th class="num">Arrears (KES)</th>
+    <th class="num">% of Portfolio</th>
+  </tr></thead>`;
+
+  const CATEGORY_ORDER = ['Loss','Doubtful','Substandard','Watch 2','Watch 1','Performing'];
+  const sorted = [...catRows].sort((a,b) => {
+    const ai = CATEGORY_ORDER.findIndex(c=>new RegExp(c,'i').test(a[catCol]||''));
+    const bi = CATEGORY_ORDER.findIndex(c=>new RegExp(c,'i').test(b[catCol]||''));
+    return ai - bi;
+  });
+
+  const tbody = `<tbody>${sorted.map(r=>{
+    const cat = r[catCol]||'Unknown';
+    const pct = totBal>0?(num(r,balCol)/totBal*100).toFixed(1):0;
+    const clr = CAT_COLORS[cat]||'#999';
+    const pillCl = cat.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+    return `<tr>
+      <td><span class="pill pill-${pillCl}" style="background:${clr}22;color:${clr}">${cat}</span></td>
+      ${cntCol?`<td class="num">${fmt0(r[cntCol])}</td>`:''}
+      <td class="num">${fmtKES(num(r,balCol))}</td>
+      <td class="num">${fmtKES(num(r,arrCol))}</td>
+      <td class="num">${pct}%</td>
+    </tr>`;
+  }).join('')}</tbody>`;
+
+  const tfoot = `<tfoot><tr>
+    <td><strong>TOTAL</strong></td>
+    ${cntCol?`<td class="num"><strong>${fmt0(catRows.reduce((a,r)=>a+num(r,cntCol),0))}</strong></td>`:''}
+    <td class="num"><strong>${fmtKES(totBal)}</strong></td>
+    <td class="num"><strong>${fmtKES(catRows.reduce((a,r)=>a+num(r,arrCol),0))}</strong></td>
+    <td class="num"><strong>100%</strong></td>
+  </tr></tfoot>`;
+  document.getElementById('parTable').innerHTML = thead + tbody + tfoot;
+}
+
+// Insights
+function renderInsights(s, branchRows, catRows) {
+  const parPct   = +s.par_percentage || 0;
+  const catCol   = findCol(catRows[0], ['LoanCategory','Category','LoanClass']);
+  const balCol   = findCol(catRows[0], ['TotalOutstandingBalance','TotalLoanBalance','TotalBalance','Outstanding']);
+  const lossRows = catRows.filter(r=>/loss/i.test(r[catCol]||''));
+  const w2Rows   = catRows.filter(r=>/watch.?2/i.test(r[catCol]||''));
+  const perfRow  = catRows.find(r=>/perform/i.test(r[catCol]||''));
+  const totBal   = catRows.reduce((a,r)=>a+num(r,balCol),0);
+  const lossBal  = lossRows.reduce((a,r)=>a+num(r,balCol),0);
+  const w2Bal    = w2Rows.reduce((a,r)=>a+num(r,balCol),0);
+  const perfPct  = totBal>0?(num(perfRow,balCol)/totBal*100).toFixed(1):0;
+
+  // largest branch at risk
+  const brBalCol = findCol(branchRows[0], ['AmountInArrears','AmountArrears','Arrears']);
+  const brNmCol  = findCol(branchRows[0], ['BranchName','Branch','Name']);
+  const sortedBr = [...branchRows].sort((a,b)=>num(b,brBalCol)-num(a,brBalCol));
+  const topBr    = sortedBr[0];
+
+  document.getElementById('insightGrid').innerHTML = `
+    <div class="insight-card ${parPct>5?'crit':parPct>2?'warn':'good'}">
+      <div class="insight-head">${parPct>5?'High PAR — Action Required':parPct>2?'PAR — Monitor Closely':'PAR — Acceptable'}</div>
+      <div class="insight-body">
+        <span class="insight-num" style="color:${parPct>5?'var(--red)':parPct>2?'var(--amber)':'var(--green)'}">${fmtPct(parPct)}</span>
+        Company-wide Portfolio at Risk rate. ${parPct>5?'Immediate collection drive required.':parPct>2?'Maintain watch on overdue accounts.':'Portfolio health is within acceptable range.'}
+      </div>
+    </div>
+    <div class="insight-card good">
+      <div class="insight-head">Performing Portfolio</div>
+      <div class="insight-body">
+        <span class="insight-num" style="color:var(--green)">${perfPct}%</span>
+        ${fmtKES(num(perfRow,balCol))} is performing — no arrears. This is the foundation of a healthy book.
+      </div>
+    </div>
+    <div class="insight-card ${lossBal>0?'crit':'good'}">
+      <div class="insight-head">${lossBal>0?'Loss Category — Recovery Needed':'Loss Category — Clean'}</div>
+      <div class="insight-body">
+        <span class="insight-num" style="color:${lossBal>0?'var(--red)':'var(--green)'}">${fmtKES(lossBal)||'KES 0'}</span>
+        ${lossBal>0?'Loans in the Loss bucket require legal or recovery escalation immediately.':'No loans currently classified as Loss. Excellent.'}
+      </div>
+    </div>
+    <div class="insight-card ${w2Bal>0?'warn':'good'}">
+      <div class="insight-head">Watch 2 Exposure</div>
+      <div class="insight-body">
+        <span class="insight-num" style="color:${w2Bal>0?'#92400E':'var(--green)'}">${fmtKES(w2Bal)||'KES 0'}</span>
+        ${w2Bal>0?'Watch 2 loans are 15–30 days overdue and will classify as Substandard within days. Prioritise collection calls.':'No Watch 2 exposure. All loans are either current or in earlier stages.'}
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-head">Active Loan Book</div>
+      <div class="insight-body">
+        <span class="insight-num" style="color:var(--navy)">${fmt0(s.active_loans)}</span>
+        Active loans with ${fmtM(s.total_balance)} total outstanding. Principal represents ${s.total_balance>0?((s.principal_outstanding/s.total_balance)*100).toFixed(0):0}% of gross book.
+      </div>
+    </div>
+    <div class="insight-card ${topBr?'warn':''}">
+      <div class="insight-head">${branchRows.length>1?'Highest Arrears Branch':'Branch Focus'}</div>
+      <div class="insight-body">
+        ${topBr ? `<span class="insight-num" style="color:var(--navy)">${topBr[brNmCol]||'—'}</span>${fmtKES(num(topBr,brBalCol))} in arrears — highest branch exposure. Prioritise RM engagement here.` : 'Single branch view — use All Branches to compare branch performance.'}
+      </div>
+    </div>`;
+}
+
+// ── EXCEL EXPORT ──────────────────────────────────────
+function exportExcel() {
+  if (!reportData.summary) return;
+  const { date, branch, summary, branchArrears, products, category } = reportData;
+
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Summary
+  const sumRows = [
+    ['MWANANCHI CREDIT LTD — PORTFOLIO SUMMARY'],
+    [`As at: ${fmtDate(date)}  |  Branch: ${branch === 'ALL' ? 'All Branches' : branch}`],
+    [],
+    ['Metric', 'Value'],
+    ['Active Loans', summary.active_loans],
+    ['Total Loan Balance (KES)', summary.total_balance],
+    ['Principal Outstanding (KES)', summary.principal_outstanding],
+    ['Amount in Arrears (KES)', summary.amount_in_arrears],
+    ['Loans in Arrears (Count)', summary.loan_count_in_arrears],
+    ['Portfolio at Risk (%)', summary.par_percentage],
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sumRows), 'Summary');
+
+  // Sheet 2: Branch Arrears
+  if (branchArrears.length) {
+    const keys = Object.keys(branchArrears[0]);
+    const ws2  = XLSX.utils.json_to_sheet(branchArrears, { header: keys });
+    XLSX.utils.book_append_sheet(wb, ws2, 'Branch Arrears');
+  }
+
+  // Sheet 3: Loan Products
+  if (products.length) {
+    const keys = Object.keys(products[0]);
+    const ws3  = XLSX.utils.json_to_sheet(products, { header: keys });
+    XLSX.utils.book_append_sheet(wb, ws3, 'Loan Products');
+  }
+
+  // Sheet 4: Loan Category
+  if (category.length) {
+    const keys = Object.keys(category[0]);
+    const ws4  = XLSX.utils.json_to_sheet(category, { header: keys });
+    XLSX.utils.book_append_sheet(wb, ws4, 'Loan Category');
+  }
+
+  const fname = branch === 'ALL'
+    ? `MCL_Portfolio_${date}.xlsx`
+    : `MCL_Portfolio_${date}_${branch}.xlsx`;
+  XLSX.writeFile(wb, fname);
+}
+
+// ── HELPERS ───────────────────────────────────────────
+function showState(s) {
+  ['initialState','loadingState','errorState','reportContent'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  const map = { initial:'initialState', loading:'loadingState', error:'errorState', content:'reportContent' };
+  if (map[s]) document.getElementById(map[s]).style.display = s==='content'?'block':'block';
+}
+function setMsg(type, html) {
+  const id = type === 'loading' ? 'loadingMsg' : 'errorMsg';
+  document.getElementById(id).innerHTML = html;
+}
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+function findCol(row, candidates) {
+  if (!row) return candidates[0];
+  for (const c of candidates) { if (c in row) return c; }
+  // fuzzy match
+  const keys = Object.keys(row);
+  for (const c of candidates) {
+    const m = keys.find(k => k.toLowerCase().includes(c.toLowerCase()));
+    if (m) return m;
+  }
+  return keys[0] || candidates[0];
+}
+function num(row, ...cols) {
+  if (!row) return 0;
+  for (const c of cols) { if (c && c in row && row[c] !== null) return +row[c] || 0; }
+  return 0;
+}
+function fmt0(v)    { return (+v||0).toLocaleString('en-KE', {maximumFractionDigits:0}); }
+function fmtKES(v)  { return 'KES ' + (+v||0).toLocaleString('en-KE', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtM(v)    { const n=+v||0; return n>=1e9?`KES ${(n/1e9).toFixed(1)}B`:n>=1e6?`KES ${(n/1e6).toFixed(1)}M`:n>=1e3?`KES ${(n/1e3).toFixed(0)}K`:`KES ${fmt0(n)}`; }
+function fmtPct(v)  { return (+v||0).toFixed(2) + '%'; }
+function fmtDate(d) { return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}); }
+function chartOpts(unit, legend=false) {
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins: {
+      legend: { display:legend, position:'top', labels:{ font:{family:'Figtree',size:11}, usePointStyle:true, padding:10 }},
+      tooltip: { callbacks: { label: ctx => ` ${fmtKES(ctx.parsed.y ?? ctx.parsed)}` },
+                 titleFont:{family:'Figtree',weight:'700'}, bodyFont:{family:'Figtree'} }
+    },
+    scales: {
+      x: { grid:{display:false}, ticks:{font:{family:'Figtree',size:10,weight:'600'}} },
+      y: { grid:{color:'#EEF0F8'}, ticks:{font:{family:'Figtree',size:10}, callback: v => fmtM(v)} }
+    }
+  };
+}
+</script>
+</body>
+</html>

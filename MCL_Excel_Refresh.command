@@ -69,11 +69,43 @@ else
 fi
 export SQL_PASSWORD
 
-# ── STEP 4: Run refresh ───────────────────────────────────────
-step 4 "Running SP queries and building Excel..."
+# ── STEP 4: Date selection ───────────────────────────────────
+step 4 "As at Date..."
+DEFAULT_DATE=$(date +"%Y-%m-%d")
 echo ""
-AS_AT_DATE=$(date +"%Y-%m-%d")
-"$VENV/bin/python3" "$SCRIPT" "$AS_AT_DATE"
+echo "       Enter the date you want to report on."
+echo "       Format: YYYY-MM-DD   (e.g. 2026-06-20)"
+echo "       Press Enter to use today: $DEFAULT_DATE"
+echo ""
+read -p "       As at Date [${DEFAULT_DATE}]: " INPUT_DATE
+echo ""
+
+# Use default if nothing entered
+AS_AT_DATE="${INPUT_DATE:-$DEFAULT_DATE}"
+
+# Validate format
+if ! [[ "$AS_AT_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+  echo "       Invalid date format. Using today: $DEFAULT_DATE"
+  AS_AT_DATE="$DEFAULT_DATE"
+fi
+ok "Reporting as at: $AS_AT_DATE"
+
+# ── STEP 4b: Branch filter ────────────────────────────────────
+echo ""
+echo "       Enter a branch name to filter (or press Enter for ALL branches)."
+echo "       Examples: KISUMU, ELDORET, MOMBASA, NAKURU, THIKA"
+echo ""
+read -p "       Branch [ALL]: " INPUT_BRANCH
+echo ""
+
+BRANCH="${INPUT_BRANCH:-ALL}"
+BRANCH_UPPER=$(echo "$BRANCH" | tr '[:lower:]' '[:upper:]')
+ok "Branch filter: $BRANCH_UPPER"
+
+# ── STEP 5: Run refresh ───────────────────────────────────────
+step 5 "Running SP queries and building Excel..."
+echo ""
+"$VENV/bin/python3" "$SCRIPT" "$AS_AT_DATE" "$BRANCH_UPPER"
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then
@@ -87,8 +119,12 @@ if [ $EXIT_CODE -ne 0 ]; then
   exit 1
 fi
 
-# ── STEP 5: Open Excel ────────────────────────────────────────
-EXCEL_FILE="$REPO_DIR/MCL_Portfolio_${AS_AT_DATE}.xlsx"
+# ── STEP 6: Open Excel ────────────────────────────────────────
+if [ "$BRANCH_UPPER" = "ALL" ]; then
+  EXCEL_FILE="$REPO_DIR/MCL_Portfolio_${AS_AT_DATE}.xlsx"
+else
+  EXCEL_FILE="$REPO_DIR/MCL_Portfolio_${AS_AT_DATE}_${BRANCH_UPPER}.xlsx"
+fi
 if [ -f "$EXCEL_FILE" ]; then
   echo "  Opening Excel..."
   open "$EXCEL_FILE"
@@ -97,7 +133,8 @@ fi
 echo ""
 echo "========================================================"
 echo "  DONE — Portfolio Excel is ready"
-echo "  File: $EXCEL_FILE"
+echo "  Date:  $AS_AT_DATE"
+echo "  File:  $EXCEL_FILE"
 echo ""
 echo "  To get Claude's analysis:"
 echo "    1. Upload the Excel file to Claude in Cowork"
